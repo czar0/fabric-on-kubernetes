@@ -12,7 +12,7 @@ spec:
 
   containers:
   - name: joinchannel
-    image: ibmblockchain/fabric-peer:1.1.0
+    image: hyperledger/fabric-peer:1.4.0-rc2
     imagePullPolicy: Always
     command: ["sh", "-c", "peer channel fetch config -o ${ORDERER_URL} -c ${CHANNEL_NAME} && peer channel join -b ${CHANNEL_NAME}_config.block "]
     env:
@@ -26,8 +26,8 @@ spec:
       value: %PEER_ADDRESS%
     - name: CORE_PEER_LOCALMSPID
       value: %PEER_MSPID%
-    - name: CORE_LOGGING_LEVEL
-      value: debug
+    - name: FABRIC_LOGGING_SPEC
+      value: "debug"
     - name: CORE_PEER_MSPCONFIGPATH
       value: %MSP_CONFIGPATH%
     - name: FABRIC_CFG_PATH

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+type kubectl >/dev/null 2>&1 || { echo >&2 "I require kubectl but it is not installed.  Aborting."; exit 1; }
+
 if [ "${PWD##*/}" == "create" ]; then
 	:
 elif [ "${PWD##*/}" == "scripts" ]; then

@@ -40,7 +40,7 @@ if [ "${WITH_COUCHDB}" == "true" ]; then
     # Use the yaml file with couchdb
     echo "Running: kubectl create -f ${KUBECONFIG_FOLDER}/blockchain-couchdb-services-${OFFERING}.yaml"
     kubectl create -f ${KUBECONFIG_FOLDER}/blockchain-couchdb-services-${OFFERING}.yaml
-else
+else    
     echo "Running: kubectl create -f ${KUBECONFIG_FOLDER}/blockchain-services-${OFFERING}.yaml"
     kubectl create -f ${KUBECONFIG_FOLDER}/blockchain-services-${OFFERING}.yaml
 fi
@@ -51,6 +51,7 @@ kubectl create -f ${KUBECONFIG_FOLDER}/blockchain-prep.yaml
 PREPSTATUS=$(kubectl get pods -a prep | grep prep | awk '{print $3}')
 while [ "${PREPSTATUS}" != "Running" ]; do
     echo "Waiting for Prep pod to start completion. Status = ${PREPSTATUS}"
+    sleep 5
     if [ "${PREPSTATUS}" == "Error" ]; then
         echo "There is an error in prep pod. Please run 'kubectl logs prep' or 'kubectl describe pod prep'."
         exit 1
@@ -83,12 +84,13 @@ NUMPENDING=$(kubectl get deployments | grep blockchain | awk '{print $5}' | grep
 while [ "${NUMPENDING}" != "0" ]; do
     echo "Waiting on pending deployments. Deployments pending = ${NUMPENDING}"
     NUMPENDING=$(kubectl get deployments | grep blockchain | awk '{print $5}' | grep 0 | wc -l | awk '{print $1}')
-    sleep 1
+    sleep 5
 done
 
 UTILSSTATUS=$(kubectl get pods utils | grep utils | awk '{print $3}')
 while [ "${UTILSSTATUS}" != "Completed" ]; do
     echo "Waiting for Utils pod to start completion. Status = ${UTILSSTATUS}"
+    sleep 5
     if [ "${UTILSSTATUS}" == "Error" ]; then
         echo "There is an error in utils pod. Please run 'kubectl logs utils' or 'kubectl describe pod utils'."
         exit 1
@@ -106,7 +108,7 @@ while [ "${UTILSCOUNT}" != "1" ]; do
         echo "There is an error in utils pod. Please run 'kubectl logs utils' or 'kubectl describe pod utils'."
         exit 1
     fi
-    sleep 1
+    sleep 5
     UTILSCOUNT=$(kubectl get pods utils | grep "0/3" | grep "Completed" | wc -l | awk '{print $1}')
 done
 

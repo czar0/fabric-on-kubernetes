@@ -12,7 +12,7 @@ spec:
 
   containers:
   - name: chaincodeinstantiate
-    image: ibmblockchain/fabric-tools:1.1.0
+    image: hyperledger/fabric-tools:1.4.0-rc2
     imagePullPolicy: Always
     command: ["sh", "-c", "peer chaincode instantiate -n ${CHAINCODE_NAME} -v ${CHAINCODE_VERSION} -c '{\"Args\":[\"init\",\"a\",\"100\",\"b\",\"200\"]}' -C ${CHANNEL_NAME}"]
     env:

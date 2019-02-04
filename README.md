@@ -1,11 +1,33 @@
-# Develop in a cloud sandbox
-# IBM Blockchain Platform
+**v1.4.0-rc2**
+# Deploying Hyperledger Fabric on a Kubernetes cluster
+A collection of kubernetes configurations and helm charts used to deploy a blockchain network.
 
-Follow the instructions on [ibm-blockchain.github.io](https://ibm-blockchain.github.io) to launch a basic IBM Blockchain network on the IBM Container Service's free plan. At the end of the install, you will be able to obtain a public URL to access your instance of Composer Playground (the UI for creating and deploying Business Networks to Fabric).
+The current configuration of the network is limited to:
+- 2 organisations
+- 2 peers (1 for each org)
+- (optional) 2 couchdb state for the peers
+- 1 ca
+- 1 orderer (SOLO)
 
-There is a single script install available as well as full documentation on individual commands for custom installations.
+Therefore it is meant to be used mostly for development purposes.
 
-You will need to clone this repository to get the relevant bash scripts and YAML files.
+Tested on IBM Cloud > IBM Container Service > Free cluster
+## Prerequisites
+- [Kubernetes](https://kubernetes.io/docs/setup/release/)
+- [Helm](https://github.com/helm/helm)
+
+## Deployment
+### Using a single script
+```bash
+cd cs-offerings/scripts
+./create_all [--with-couchdb]
+```
+
+### Using helm
+**Note: Limited only to the creation of the network. Configuration of channel and chaincode no included yet.**
+
+Follow the [README](helm-charts/README.md)
+
 
 # Privacy Notice
 For serviceability needs regarding the number of network activity, IBM has added a mechanism in the ordering service to collect a "pulse" from the networks. The UUID of a network is collected periodically and sent to a monitoring service, there is no blockchain or transaction information or data gathered or accessed. The only purpose is to provide information on activity passing through the ordering service.

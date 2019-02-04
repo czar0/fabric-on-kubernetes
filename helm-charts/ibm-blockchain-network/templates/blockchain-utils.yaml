@@ -25,7 +25,12 @@ spec:
         - sh
         - -c
         - |
-          cryptogen generate --config /sampleconfig/crypto-config.yaml &&
+          while [ ! -f /shared/config/crypto-config.yaml ]; do
+            echo Waiting for config files
+            sleep 1
+          done
+
+          cryptogen generate --config /shared/config/crypto-config.yaml &&
           cp -r crypto-config /shared/
 
           for file in $(find /shared/ -iname *_sk); do
@@ -52,11 +57,7 @@ spec:
           sleep 1
         done
 
-        echo 'sample config is =>' &&
-        ls /sampleconfig &&
-        cp /sampleconfig/configtx.yaml /shared/configtx.yaml &&
-        echo 'shared after copy is =>' &&
-        ls /shared &&
+        cp /shared/config/configtx.yaml /shared/configtx.yaml &&
         cd /shared/ &&
         configtxgen -profile TwoOrgsOrdererGenesis -outputBlock orderer.block &&
         find /shared -type d | xargs chmod a+rx &&
@@ -97,7 +98,7 @@ spec:
         done
 
         echo \"Starting bootstrap\" &&
-        cp -r /sampleconfig/cas /shared &&
+        cp -r /shared/config/cas /shared &&
         echo \"Done copying\" &&
         touch /shared/bootstrapped &&
         rm -f /shared/status_configtxgen_complete &&

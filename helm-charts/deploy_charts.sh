@@ -11,6 +11,8 @@
 # Version:          7 December 2017
 #
 
+KUBECONFIG_FOLDER=../cs-offerings/kube-configs
+
 #
 # checkDependencies: Checks to ensure required tools are installed.
 #
@@ -74,19 +76,36 @@ function cleanEnvironment() {
     fi
 
     # Wipe the /shared persistent volume if it exists (it should be removed with chart removal)
-    kubectl get pv shared > /dev/null 2>&1
-    if [[ ${?} -eq 0 ]]; then
-        kubectl create -f ../cs-offerings/kube-configs/wipe_shared.yaml
+    kubectl delete pv --all
+    kubectl delete pvc --all
 
-        # Wait for the wipe shared pod to finish
-        while [ "$(kubectl get pod -a wipeshared | grep wipeshared | awk '{print $3}')" != "Completed" ]; do
-            echo "Waiting for the shared folder to be erased..."
-            sleep 1;
-        done
+    echo "Checking if all deployments are deleted"
 
-        # Delete the wipe shared pod
-        kubectl delete -f ../cs-offerings/kube-configs/wipe_shared.yaml
-    fi
+    NUM_PENDING=$(kubectl get deployments | grep blockchain | wc -l | awk '{print $1}')
+    while [ "${NUM_PENDING}" != "0" ]; do
+        echo "Waiting for all blockchain deployments to be deleted. Remaining = ${NUM_PENDING}"
+        NUM_PENDING=$(kubectl get deployments | grep blockchain | wc -l | awk '{print $1}')
+        sleep 1;
+    done
+
+    NUM_PENDING=$(kubectl get svc | grep blockchain | wc -l | awk '{print $1}')
+    while [ "${NUM_PENDING}" != "0" ]; do
+        echo "Waiting for all blockchain services to be deleted. Remaining = ${NUM_PENDING}"
+        NUM_PENDING=$(kubectl get svc | grep blockchain | wc -l | awk '{print $1}')
+        sleep 1;
+    done
+
+    while [ "$(kubectl get pods | grep utils | wc -l | awk '{print $1}')" != "0" ]; do
+        echo "Waiting for util pod to be deleted."
+        sleep 1;
+    done
+
+    while [ "$(kubectl get pods | grep prep | wc -l | awk '{print $1}')" != "0" ]; do
+        echo "Waiting for prep pod to be deleted."
+        sleep 1;
+    done
+
+    echo "All blockchain deployments & services have been removed"
 }
 
 #
@@ -182,6 +201,27 @@ function startNetwork() {
     lintChart
     colorEcho "\n$ helm install --name ${RELEASE_NAME} ." 132
     helm install --name ${RELEASE_NAME} .
+
+    # Copy config
+    PREPSTATUS=$(kubectl get pods -a prep | grep prep | awk '{print $3}')
+    while [ "${PREPSTATUS}" != "Running" ]; do
+        echo "Waiting for Prep pod to start completion. Status = ${PREPSTATUS}"
+        sleep 5
+        if [ "${PREPSTATUS}" == "Error" ]; then
+            echo "There is an error in prep pod. Please run 'kubectl logs prep' or 'kubectl describe pod prep'."
+            exit 1
+        fi
+        PREPSTATUS=$(kubectl get pods -a prep | grep prep | awk '{print $3}')
+    done
+
+    sleep 2
+
+    echo "Copying configuration data to shared volume"
+    test -d "../../sampleconfig" && echo Exists || echo Does not exist
+    kubectl cp ../../sampleconfig prep:/shared/config
+
+    echo "Prep: Removing container"
+    kubectl delete -f ../${KUBECONFIG_FOLDER}/blockchain-prep.yaml
 
     # Ensure the correct number of pods are running and completed
     checkPodStatus ${TOTAL_RUNNING} ${TOTAL_COMPLETED}

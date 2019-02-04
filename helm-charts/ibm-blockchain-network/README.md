@@ -44,10 +44,10 @@ The following tables lists the configurable parameters of the IBM Blockchain Net
 
 |             Parameter              |               Description                |                         Default                          |
 |------------------------------------|------------------------------------------|----------------------------------------------------------|
-| `blockchain.toolsImage`            | Blockchain tools image                   | `ibmblockchain/fabric-tools:1.0.0`                       |
-| `blockchain.ordererImage`          | Blockchain orderer image                 | `ibmblockchain/fabric-orderer:1.0.0`                     |
-| `blockchain.caImage`               | Blockchain ca image                      | `ibmblockchain/fabric-ca:1.0.0`                          |
-| `blockchain.peerImage`             | Blockchain peer image                    | `ibmblockchain/fabric-peer:1.0.0`                        |
+| `blockchain.toolsImage`            | Blockchain tools image                   | `hyperledger/fabric-tools:1.0.0`                       |
+| `blockchain.ordererImage`          | Blockchain orderer image                 | `hyperledger/fabric-orderer:1.0.0`                     |
+| `blockchain.caImage`               | Blockchain ca image                      | `hyperledger/fabric-ca:1.0.0`                          |
+| `blockchain.peerImage`             | Blockchain peer image                    | `hyperledger/fabric-peer:1.0.0`                        |
 | `blockchain.pullPolicy`            | Blockchain image pull policy             | `IfNotPresent`                                           |
 | `persistence.storageClass`         | Storage Class for dynamic provisioning   | nil                                                      |
 

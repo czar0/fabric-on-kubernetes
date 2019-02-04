@@ -12,7 +12,7 @@
 	See the yaml file that is being used [crypto-config.yaml](./crypto-config.yaml) which can also be found in tools image at `/sampleconfig/crypto-config.yaml`. Following is the command used to generate the crypto-material.
 
 	```bash
-	cryptogen generate --config /sampleconfig/crypto-config.yaml
+	cryptogen generate --config /shared/config/crypto-config.yaml
 	```
 
 	`cryptogen` is the tool that Hyperledger Fabric provides to generate crypto-material in a particular directory format that the components expect, for ease of setting up a basic network. More details can be found on [Hyperledger Fabric docs for crypto-gen](http://hyperledger-fabric.readthedocs.io/en/latest/build_network.html?highlight=cryptogen#crypto-generator).
@@ -22,9 +22,9 @@
 
 	```
 	name: cryptogen
-		image: ibmblockchain/fabric-tools:1.1.0
+		image: hyperledger/fabric-tools:1.4.0-rc2
 		imagePullPolicy: Always
-		command: ["sh", "-c", "cryptogen generate --config /sampleconfig/crypto-config.yaml && cp -r crypto-config /shared/ && for file in $(find /shared/ -iname *_sk); do dir=$(dirname $file); mv ${dir /*_sk ${dir}/key.pem; done && find /shared -type d | xargs chmod a+rx &&  find /shared -type f | xargs chmod a+r && touch /shared/status_cryptogen_complete "]
+		command: ["sh", "-c", "cryptogen generate --config /shared/config/crypto-config.yaml && cp -r crypto-config /shared/ && for file in $(find /shared/ -iname *_sk); do dir=$(dirname $file); mv ${dir /*_sk ${dir}/key.pem; done && find /shared -type d | xargs chmod a+rx &&  find /shared -type f | xargs chmod a+r && touch /shared/status_cryptogen_complete "]
 		volumeMounts:
 		- mountPath: /shared
 		name: shared
@@ -42,7 +42,7 @@
 	From kubernetes point of view, in the utils pods, a container named `configtxgen` is defined which uses the same command as described above to generate orderer genesis block. Here is the block from [blockchain.yaml](../../kube-configs/blockchain.yaml)
 	```
 	name: configtxgen
-		image: ibmblockchain/fabric-tools:1.1.0
+		image: hyperledger/fabric-tools:1.4.0-rc2
 		imagePullPolicy: Always
 		command: ["sh", "-c", "sleep 1 && while [ ! -f /shared/status_cryptogen_complete ]; do echo Waiting for cryptogen; sleep 1; done; cp /sampleconfig/configtx.yaml 	/shared/configtx.yaml; cd /shared/; configtxgen -profile TwoOrgsOrdererGenesis -outputBlock orderer.block && find /shared -type d | xargs chmod a+rx && find /shared -type f | xargs chmod a+r && touch /shared/status_configtxgen_complete && rm /shared/status_cryptogen_complete"]
 		env:

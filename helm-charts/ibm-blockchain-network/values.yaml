@@ -42,8 +42,8 @@ persistence:
   storageClass: ""
 
 blockchain:
-  toolsImage: ibmblockchain/fabric-tools:1.0.0
-  ordererImage: ibmblockchain/fabric-orderer:1.0.0
-  caImage: ibmblockchain/fabric-ca:1.0.0
-  peerImage: ibmblockchain/fabric-peer:1.0.0
+  toolsImage: hyperledger/fabric-tools:1.4.0-rc2
+  ordererImage: hyperledger/fabric-orderer:1.4.0-rc2
+  caImage: hyperledger/fabric-ca:1.4.0-rc2
+  peerImage: hyperledger/fabric-peer:1.4.0-rc2
   pullPolicy: IfNotPresent

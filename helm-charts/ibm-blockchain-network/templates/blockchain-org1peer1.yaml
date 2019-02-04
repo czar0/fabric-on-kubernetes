@@ -46,6 +46,8 @@ spec:
             touch /shared/status_org1peer1_complete &&
             peer node start
         env:
+        - name: FABRIC_LOGGING_SPEC
+          value: "debug"
         - name: CORE_PEER_ADDRESSAUTODETECT
           value: "true"
         - name: CORE_PEER_NETWORKID
@@ -70,8 +72,6 @@ spec:
           value: Org1MSP
         - name: CORE_PEER_MSPCONFIGPATH
           value: /shared/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/
-        - name: CORE_LOGGING_LEVEL
-          value: debug
         - name: CORE_LOGGING_PEER
           value: debug
         - name: CORE_LOGGING_CAUTHDSL

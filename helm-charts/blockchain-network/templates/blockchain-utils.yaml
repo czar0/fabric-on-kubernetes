@@ -2,18 +2,18 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: {{ template "ibm-blockchain-network.fullname" . }}-utils
+  name: utils
   labels:
-    app: {{ template "ibm-blockchain-network.name" . }}
+    app: {{ template "blockchain-network.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
   restartPolicy: "Never"
   volumes:
-  - name: {{ template "ibm-blockchain-shared-pvc.name" . }}
+  - name: {{ template "blockchain-shared-pvc.name" . }}
     persistentVolumeClaim:
-     claimName: {{ template "ibm-blockchain-shared-pvc.name" . }}
+     claimName: {{ template "blockchain-shared-pvc.name" . }}
   - name: dockersocket
     hostPath:
       path: /var/run/docker.sock
@@ -42,7 +42,7 @@ spec:
           touch /shared/status_cryptogen_complete
     volumeMounts:
     - mountPath: /shared
-      name: {{ template "ibm-blockchain-shared-pvc.name" . }}
+      name: {{ template "blockchain-shared-pvc.name" . }}
   - name: configtxgen
     image: {{ .Values.blockchain.toolsImage }}
     imagePullPolicy: {{ .Values.blockchain.pullPolicy }}
@@ -66,22 +66,22 @@ spec:
         rm -f /shared/status_cryptogen_complete
     env:
      - name: PEERHOST1
-       value: {{ template "ibm-blockchain-network.name" . }}-org1peer1
+       value: {{ template "blockchain-network.name" . }}-org1peer1
      - name: PEERPORT1
        value: "5010"
      - name: PEERHOST2
-       value: {{ template "ibm-blockchain-network.name" . }}-org2peer1
+       value: {{ template "blockchain-network.name" . }}-org2peer1
      - name: PEERPORT2
        value: "5010"
      - name: ORDERER_URL
-       value: {{ template "ibm-blockchain-network.name" . }}-orderer:31010
+       value: {{ template "blockchain-network.name" . }}-orderer:31010
      - name: FABRIC_CFG_PATH
        value: /shared
     # - name: GODEBUG
     #   value: "netdns=go"
     volumeMounts:
     - mountPath: /shared
-      name: {{ template "ibm-blockchain-shared-pvc.name" . }}
+      name: {{ template "blockchain-shared-pvc.name" . }}
   - name: bootstrap
     image: {{ .Values.blockchain.toolsImage }}
     imagePullPolicy: {{ .Values.blockchain.pullPolicy }}
@@ -105,5 +105,5 @@ spec:
         echo 'Done with bootstrapping'
     volumeMounts:
     - mountPath: /shared
-      name: {{ template "ibm-blockchain-shared-pvc.name" . }}
+      name: {{ template "blockchain-shared-pvc.name" . }}
 

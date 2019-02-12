@@ -4,7 +4,7 @@ kind: Pod
 metadata:
   name: {{ .Release.Name }}-test
   labels:
-    app: {{ template "ibm-blockchain-network.name" . }}
+    app: {{ template "blockchain-network.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}

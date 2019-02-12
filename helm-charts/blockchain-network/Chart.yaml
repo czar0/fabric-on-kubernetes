@@ -1,12 +1,12 @@
-name: ibm-blockchain-network
-version: 1.4.0-rc2
-appVersion: 1.4.0-rc2
-description: IBM Blockchain Network Chart
+name: blockchain-network
+version: 1.4
+appVersion: 1.4
+description: Hyperledger Fabric Chart
 keywords:
   - blockchain
 home: https://ibm-blockchain.github.io
 sources:
-  - https://github.ibm.com/IBM-Blockchain/ibm-container-service
+  - https://github.ibm.com/czar0/fabric-on-kubernetes
 maintainers:
   - name: mrshah-at-ibm
     email: mrshah@us.ibm.com

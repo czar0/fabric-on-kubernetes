@@ -76,8 +76,8 @@ function cleanEnvironment() {
     fi
 
     # Wipe the /shared persistent volume if it exists (it should be removed with chart removal)
-    kubectl delete pv --all
-    kubectl delete pvc --all
+    # kubectl delete pv --all
+    # kubectl delete pvc --all
 
     echo "Checking if all deployments are deleted"
 
@@ -97,11 +97,6 @@ function cleanEnvironment() {
 
     while [ "$(kubectl get pods | grep utils | wc -l | awk '{print $1}')" != "0" ]; do
         echo "Waiting for util pod to be deleted."
-        sleep 1;
-    done
-
-    while [ "$(kubectl get pods | grep prep | wc -l | awk '{print $1}')" != "0" ]; do
-        echo "Waiting for prep pod to be deleted."
         sleep 1;
     done
 
@@ -190,12 +185,14 @@ function lintChart() {
 # startNetwork: Starts the CA, orderer, and peer containers.
 #
 function startNetwork() {
-    RELEASE_NAME="network"
+    cleanEnvironment
+    
+    RELEASE_NAME="fabric"
     TOTAL_RUNNING=4
     TOTAL_COMPLETED=1
 
     # Move into the directory
-    pushd ibm-blockchain-network >/dev/null 2>&1
+    pushd blockchain-network >/dev/null 2>&1
 
     # Install the chart
     lintChart
@@ -203,25 +200,22 @@ function startNetwork() {
     helm install --name ${RELEASE_NAME} .
 
     # Copy config
-    PREPSTATUS=$(kubectl get pods -a prep | grep prep | awk '{print $3}')
-    while [ "${PREPSTATUS}" != "Running" ]; do
-        echo "Waiting for Prep pod to start completion. Status = ${PREPSTATUS}"
+    UTILSSTATUS=$(kubectl get pods -a utils | grep utils | awk '{print $3}')
+    while [ "${UTILSSTATUS}" != "Running" ]; do
+        echo "Waiting for utils pod to start. Status = ${UTILSSTATUS}"
         sleep 5
-        if [ "${PREPSTATUS}" == "Error" ]; then
-            echo "There is an error in prep pod. Please run 'kubectl logs prep' or 'kubectl describe pod prep'."
+        if [ "${UTILSSTATUS}" == "Error" ]; then
+            echo "There is an error in utils pod. Please run 'kubectl logs utils' or 'kubectl describe pod utils'."
             exit 1
         fi
-        PREPSTATUS=$(kubectl get pods -a prep | grep prep | awk '{print $3}')
+        UTILSSTATUS=$(kubectl get pods -a utils | grep utils | awk '{print $3}')
     done
 
     sleep 2
 
     echo "Copying configuration data to shared volume"
     test -d "../../sampleconfig" && echo Exists || echo Does not exist
-    kubectl cp ../../sampleconfig prep:/shared/config
-
-    echo "Prep: Removing container"
-    kubectl delete -f ../${KUBECONFIG_FOLDER}/blockchain-prep.yaml
+    kubectl cp ../../sampleconfig utils:/shared/config
 
     # Ensure the correct number of pods are running and completed
     checkPodStatus ${TOTAL_RUNNING} ${TOTAL_COMPLETED}
@@ -233,6 +227,5 @@ function startNetwork() {
 # Clean up and deploy the charts
 #
 checkDependencies
-cleanEnvironment
-startNetwork
 
+"$@"

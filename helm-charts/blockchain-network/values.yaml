@@ -1,4 +1,4 @@
-# Default values for ibm-blockchain-network.
+# Default values for blockchain-network.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 replicaCount: 1
@@ -42,8 +42,8 @@ persistence:
   storageClass: ""
 
 blockchain:
-  toolsImage: hyperledger/fabric-tools:1.4.0-rc2
-  ordererImage: hyperledger/fabric-orderer:1.4.0-rc2
-  caImage: hyperledger/fabric-ca:1.4.0-rc2
-  peerImage: hyperledger/fabric-peer:1.4.0-rc2
+  toolsImage: hyperledger/fabric-tools:1.4
+  ordererImage: hyperledger/fabric-orderer:1.4
+  caImage: hyperledger/fabric-ca:1.4
+  peerImage: hyperledger/fabric-peer:1.4
   pullPolicy: IfNotPresent

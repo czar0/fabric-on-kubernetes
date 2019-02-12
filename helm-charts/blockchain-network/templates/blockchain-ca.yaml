@@ -2,9 +2,9 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: {{ template "ibm-blockchain-network.fullname" . }}-ca
+  name: {{ template "blockchain-network.fullname" . }}-ca
   labels:
-    app: {{ template "ibm-blockchain-network.name" . }}
+    app: {{ template "blockchain-network.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -12,18 +12,18 @@ spec:
   replicas: 1
   template:
     metadata:
-      name: {{ template "ibm-blockchain-network.fullname" . }}-ca
+      name: {{ template "blockchain-network.fullname" . }}-ca
       labels:
-        app: {{ template "ibm-blockchain-network.name" . }}
+        app: {{ template "blockchain-network.name" . }}
         chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
-        name: {{ template "ibm-blockchain-network.fullname" . }}-ca
+        name: {{ template "blockchain-network.fullname" . }}-ca
     spec:
       volumes:
-      - name: {{ template "ibm-blockchain-shared-pvc.name" . }}
+      - name: {{ template "blockchain-shared-pvc.name" . }}
         persistentVolumeClaim:
-         claimName: {{ template "ibm-blockchain-shared-pvc.name" . }}
+         claimName: {{ template "blockchain-shared-pvc.name" . }}
 
       containers:
       - name: ca
@@ -61,4 +61,4 @@ spec:
           value: "netdns=go"
         volumeMounts:
         - mountPath: /shared
-          name: {{ template "ibm-blockchain-shared-pvc.name" . }}
+          name: {{ template "blockchain-shared-pvc.name" . }}

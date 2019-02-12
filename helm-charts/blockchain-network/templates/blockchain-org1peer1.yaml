@@ -2,9 +2,9 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: {{ template "ibm-blockchain-network.fullname" . }}-org2peer1
+  name: {{ template "blockchain-network.fullname" . }}-org1peer1
   labels:
-    app: {{ template "ibm-blockchain-network.name" . }}
+    app: {{ template "blockchain-network.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -12,24 +12,24 @@ spec:
   replicas: 1
   template:
     metadata:
-      name: {{ template "ibm-blockchain-network.fullname" . }}-org2peer1
+      name: {{ template "blockchain-network.fullname" . }}-org1peer1
       labels:
-        app: {{ template "ibm-blockchain-network.name" . }}
+        app: {{ template "blockchain-network.name" . }}
         chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
-        name: {{ template "ibm-blockchain-network.fullname" . }}-org2peer1
+        name: {{ template "blockchain-network.fullname" . }}-org1peer1
     spec:
       volumes:
-      - name: {{ template "ibm-blockchain-shared-pvc.name" . }}
+      - name: {{ template "blockchain-shared-pvc.name" . }}
         persistentVolumeClaim:
-         claimName: {{ template "ibm-blockchain-shared-pvc.name" . }}
+         claimName: {{ template "blockchain-shared-pvc.name" . }}
       - name: dockersocket
         hostPath:
           path: /var/run/docker.sock
 
       containers:
-      - name: org2peer1
+      - name: org1peer1
         image: {{ .Values.blockchain.peerImage }}
         imagePullPolicy: {{ .Values.blockchain.pullPolicy }}
         command:
@@ -43,7 +43,7 @@ spec:
               sleep 1
             done
 
-            touch /shared/status_org2peer1_complete &&
+            touch /shared/status_org1peer1_complete &&
             peer node start
         env:
         - name: FABRIC_LOGGING_SPEC
@@ -53,7 +53,7 @@ spec:
         - name: CORE_PEER_NETWORKID
           value: nid1
         - name: CORE_PEER_ADDRESS
-          value: {{ template "ibm-blockchain-network.name" . }}-org2peer1:5010
+          value: {{ template "blockchain-network.name" . }}-org1peer1:5010
         - name: CORE_PEER_LISTENADDRESS
           value: 0.0.0.0:5010
         - name: CORE_PEER_EVENTS_ADDRESS
@@ -69,9 +69,9 @@ spec:
         - name: CORE_VM_ENDPOINT
           value: unix:///host/var/run/docker.sock
         - name: CORE_PEER_LOCALMSPID
-          value: Org2MSP
+          value: Org1MSP
         - name: CORE_PEER_MSPCONFIGPATH
-          value: /shared/crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/msp/
+          value: /shared/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/
         - name: CORE_LOGGING_PEER
           value: debug
         - name: CORE_LOGGING_CAUTHDSL
@@ -81,13 +81,11 @@ spec:
         - name: CORE_LOGGING_LEDGER
           value: debug
         - name: CORE_LOGGING_MSP
-          value: debug
+          value: info
         - name: CORE_LOGGING_POLICIES
           value: debug
         - name: CORE_LOGGING_GRPC
           value: debug
-        - name: CORE_PEER_ID
-          value: org2peer1
         - name: CORE_PEER_TLS_ENABLED
           value: "false"
         - name: CORE_LEDGER_STATE_STATEDATABASE
@@ -97,11 +95,12 @@ spec:
         - name: FABRIC_CFG_PATH
           value: /etc/hyperledger/fabric/
         - name: ORDERER_URL
-          value: {{ template "ibm-blockchain-network.name" . }}-orderer:31010
+          value: {{ template "blockchain-network.name" . }}-orderer:31010
         - name: GODEBUG
           value: "netdns=go"
         volumeMounts:
         - mountPath: /shared
-          name: {{ template "ibm-blockchain-shared-pvc.name" . }}
+          name: {{ template "blockchain-shared-pvc.name" . }}
         - mountPath: /host/var/run/docker.sock
           name: dockersocket
+

@@ -3,9 +3,9 @@
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: {{ template "ibm-blockchain-shared-pvc.name" . }}
+  name: {{ template "blockchain-shared-pvc.name" . }}
   labels:
-    app: {{ template "ibm-blockchain-network.name" . }}
+    app: {{ template "blockchain-network.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -22,9 +22,9 @@ spec:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: {{ template "ibm-blockchain-shared-pvc.name" . }}
+  name: {{ template "blockchain-shared-pvc.name" . }}
   labels:
-    app: {{ template "ibm-blockchain-network.name" . }}
+    app: {{ template "blockchain-network.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}

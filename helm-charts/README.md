@@ -1,32 +1,34 @@
-# IBM Blockchain Helm Charts
+# Hyperledger Fabric Helm Charts
 
-This directory contains [Helm Charts](https://github.com/kubernetes/helm/blob/master/docs/charts.md) for creating an IBM Blockchain Platform development sandbox.
+This directory contains [Helm Charts](https://github.com/kubernetes/helm/blob/master/docs/charts.md) for creating an Hyperledger Fabric network developed in a sandbox.
 
-## TL;DR;
+## Kubernetes
 
-### Kubernetes
-
-Obtain a Kubernetes cluster using IBM Container Service by following the instructions [here](https://ibm-blockchain.github.io/setup/).
+Obtain a Kubernetes cluster and set `KUBECONFIG` to point to it.
 
 ### Install Helm
 
 1. Download and extract [Helm](https://github.com/kubernetes/helm#install) for your platform.
-2. Install Helm by running the following commands:
-
-   ```bash
-   chmod +x helm
-   mv helm /usr/local/bin
-   helm init
-   ```
+2. Follow the instruction on how to set up help for your specific platform.
+3. Initialise helm
+```bash
+helm init
+```
 
 ### Deploy the Charts
 
 Deploy all of the charts by running the following commands:
 
 ```bash
-git clone https://github.com/IBM-Blockchain/ibm-container-service.git
-cd ibm-container-service/helm-charts
-./deploy_charts.sh
+./deploy_charts.sh startNetwork
+```
+
+### Clean the environment
+
+Clean up the environment by running the following commands:
+
+```bash
+./deploy_charts.sh cleanEnvironment
 ```
 
 ## Deploying the Charts Manually
@@ -42,6 +44,6 @@ Use the following instructions to deploy each chart manually.
 * Deploy the blockchain network chart by running the following commands:
 
   ```bash
-  cd ibm-container-service/helm-charts/ibm-blockchain-network
+  cd ./blockchain-network
   helm install --name blockchain .
   ```

@@ -14,14 +14,14 @@ spec:
       path: /var/run/docker.sock
   containers:
   - name: cryptogen
-    image: hyperledger/fabric-tools:1.4.0-rc2
+    image: hyperledger/fabric-tools:1.4
     imagePullPolicy: Always
-    command: ["sh", "-c", "cryptogen generate --config /sampleconfig/crypto-config.yaml && cp -r crypto-config /shared/ && for file in $(find /shared/ -iname *_sk); do dir=$(dirname $file); mv ${dir}/*_sk ${dir}/key.pem; done && find /shared -type d | xargs chmod a+rx && find /shared -type f | xargs chmod a+r && touch /shared/status_cryptogen_complete "]
+    command: ["sh", "-c", "sleep 1 && while [ ! -f /shared/config/crypto-config.yaml ]; do echo Waiting for config files; sleep 1; done; cryptogen generate --config /sampleconfig/crypto-config.yaml && cp -r crypto-config /shared/ && for file in $(find /shared/ -iname *_sk); do dir=$(dirname $file); mv ${dir}/*_sk ${dir}/key.pem; done && find /shared -type d | xargs chmod a+rx && find /shared -type f | xargs chmod a+r && touch /shared/status_cryptogen_complete "]
     volumeMounts:
     - mountPath: /shared
       name: shared
   - name: configtxgen
-    image: hyperledger/fabric-tools:1.4.0-rc2
+    image: hyperledger/fabric-tools:1.4
     imagePullPolicy: Always
     command: ["sh", "-c", "sleep 1 && while [ ! -f /shared/status_cryptogen_complete ]; do echo Waiting for cryptogen; sleep 1; done; cp /sampleconfig/configtx.yaml /shared/configtx.yaml; cd /shared/; configtxgen -profile TwoOrgsOrdererGenesis -outputBlock orderer.block && find /shared -type d | xargs chmod a+rx && find /shared -type f | xargs chmod a+r && touch /shared/status_configtxgen_complete && rm /shared/status_cryptogen_complete"]
     env:
@@ -43,7 +43,7 @@ spec:
     - mountPath: /shared
       name: shared
   - name: bootstrap
-    image: hyperledger/fabric-tools:1.4.0-rc2
+    image: hyperledger/fabric-tools:1.4
     imagePullPolicy: Always
     command: ["sh", "-c", "sleep 1 && while [ ! -f /shared/status_configtxgen_complete ]; do echo Waiting for configtxgen; sleep 1; done && cp -r /sampleconfig/cas /shared && touch /shared/bootstrapped && rm /shared/status_configtxgen_complete && echo 'Done with bootstrapping'" ]
     volumeMounts:
@@ -68,10 +68,10 @@ spec:
 
       containers:
       - name: pulse
-        image: hyperledger/fabric-tools:1.4.0-rc2
+        image: hyperledger/fabric-tools:1.4
         command: ["sh", "-c", "sleep 1 && UUID=$(cat /proc/sys/kernel/random/uuid) && while [ true ]; do curl https://ics-endpoint.mybluemix.net/pulse/beat/$UUID; sleep 10; done"]
       - name: orderer
-        image: hyperledger/fabric-orderer:1.4.0-rc2
+        image: hyperledger/fabric-orderer:1.4
         command: ["sh", "-c", "sleep 5 && while [ ! -f /shared/bootstrapped ]; do echo Waiting for bootstrap; sleep 1; done; orderer"]
         env:
         - name: ORDERER_CFG_PATH
@@ -131,7 +131,7 @@ spec:
 
       containers:
       - name: ca
-        image: hyperledger/fabric-ca:1.4.0-rc2
+        image: hyperledger/fabric-ca:1.4
         command: ["sh", "-c", "sleep 1 && while [ ! -f /shared/bootstrapped ]; do echo Waiting for bootstrap; sleep 1; done; fabric-ca-server start -c ${CONFIGYAML}"]
         env:
         - name: CONFIGYAML
@@ -176,7 +176,7 @@ spec:
 
       containers:
       - name: org1peer1
-        image: hyperledger/fabric-peer:1.4.0-rc2
+        image: hyperledger/fabric-peer:1.4
         command: ["sh", "-c", "sleep 1 && while [ ! -f /shared/bootstrapped ]; do echo Waiting for bootstrap; sleep 1; done; peer node start"]
         env:
         - name: FABRIC_LOGGING_SPEC
@@ -264,7 +264,7 @@ spec:
 
       containers:
       - name: org2peer1
-        image: hyperledger/fabric-peer:1.4.0-rc2
+        image: hyperledger/fabric-peer:1.4
         command: ["sh", "-c", "sleep 1 && while [ ! -f /shared/bootstrapped ]; do echo Waiting for bootstrap; sleep 1; done;  peer node start"]
         env:
         - name: FABRIC_LOGGING_SPEC

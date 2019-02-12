@@ -1,4 +1,4 @@
-**v1.4.0-rc2**
+**v1.4**
 # Deploying Hyperledger Fabric on a Kubernetes cluster
 A collection of kubernetes configurations and helm charts used to deploy a blockchain network.
 
@@ -28,6 +28,15 @@ cd cs-offerings/scripts
 
 Follow the [README](helm-charts/README.md)
 
+## Cleanup
+### Using a single script
+```bash
+cd cs-offerings/scripts
+./delete_all
+```
+
+### Using helm
+Follow the [README](helm-charts/README.md)
 
 # Privacy Notice
 For serviceability needs regarding the number of network activity, IBM has added a mechanism in the ordering service to collect a "pulse" from the networks. The UUID of a network is collected periodically and sent to a monitoring service, there is no blockchain or transaction information or data gathered or accessed. The only purpose is to provide information on activity passing through the ordering service.

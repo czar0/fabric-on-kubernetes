@@ -11,7 +11,7 @@ spec:
       claimName: shared-pvc
   containers:
   - name: chaincodeinstall
-    image: hyperledger/fabric-tools:1.4.0-rc2
+    image: hyperledger/fabric-tools:1.4
     imagePullPolicy: Always
     command: ["sh", "-c", "git clone -b release-1.4 https://github.com/hyperledger/fabric $GOPATH/src/github.com/hyperledger/fabric/ && peer chaincode install -n ${CHAINCODE_NAME} -v ${CHAINCODE_VERSION} -p github.com/hyperledger/fabric/examples/chaincode/go/example02"]
     env:

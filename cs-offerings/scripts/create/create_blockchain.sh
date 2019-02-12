@@ -45,29 +45,6 @@ else
     kubectl create -f ${KUBECONFIG_FOLDER}/blockchain-services-${OFFERING}.yaml
 fi
 
-echo "Running: kubectl create -f ${KUBECONFIG_FOLDER}/blockchain-prep.yaml"
-kubectl create -f ${KUBECONFIG_FOLDER}/blockchain-prep.yaml
-
-PREPSTATUS=$(kubectl get pods -a prep | grep prep | awk '{print $3}')
-while [ "${PREPSTATUS}" != "Running" ]; do
-    echo "Waiting for Prep pod to start completion. Status = ${PREPSTATUS}"
-    sleep 5
-    if [ "${PREPSTATUS}" == "Error" ]; then
-        echo "There is an error in prep pod. Please run 'kubectl logs prep' or 'kubectl describe pod prep'."
-        exit 1
-    fi
-    PREPSTATUS=$(kubectl get pods -a prep | grep prep | awk '{print $3}')
-done
-
-sleep 2
-
-echo "Prep: Copying configuration data to shared volume"
-test -d "config" && echo Exists || echo Does not exist
-kubectl cp config prep:/shared/config
-
-echo "Prep: Removing container"
-kubectl delete -f ${KUBECONFIG_FOLDER}/blockchain-prep.yaml
-
 echo "Creating new Deployment"
 if [ "${WITH_COUCHDB}" == "true" ]; then
     # Use the yaml file with couchdb
@@ -88,8 +65,8 @@ while [ "${NUMPENDING}" != "0" ]; do
 done
 
 UTILSSTATUS=$(kubectl get pods utils | grep utils | awk '{print $3}')
-while [ "${UTILSSTATUS}" != "Completed" ]; do
-    echo "Waiting for Utils pod to start completion. Status = ${UTILSSTATUS}"
+while [ "${UTILSSTATUS}" != "Running" ]; do
+    echo "Waiting for Utils pod to start. Status = ${UTILSSTATUS}"
     sleep 5
     if [ "${UTILSSTATUS}" == "Error" ]; then
         echo "There is an error in utils pod. Please run 'kubectl logs utils' or 'kubectl describe pod utils'."
@@ -98,6 +75,11 @@ while [ "${UTILSSTATUS}" != "Completed" ]; do
     UTILSSTATUS=$(kubectl get pods utils | grep utils | awk '{print $3}')
 done
 
+sleep 2
+
+echo "Prep: Copying configuration data to shared volume"
+test -d "config" && echo Exists || echo Does not exist
+kubectl cp config utils:/shared/config
 
 UTILSCOUNT=$(kubectl get pods utils | grep "0/3" | grep "Completed" | wc -l | awk '{print $1}')
 while [ "${UTILSCOUNT}" != "1" ]; do

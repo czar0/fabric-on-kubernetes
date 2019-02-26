@@ -292,6 +292,21 @@ Channel: &ChannelDefaults
 #
 ################################################################################
 Profiles:
+    OneOrgOrdererGenesis:
+        Orderer:
+            <<: *OrdererDefaults
+            Organizations:
+                - *OrdererOrg
+        Consortiums:
+            SampleConsortium:
+                Organizations:
+                    - *Org1
+    OneOrgChannel:
+        Consortium: SampleConsortium
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+                - *Org1
 
     TwoOrgsOrdererGenesis:
         <<: *ChannelDefaults

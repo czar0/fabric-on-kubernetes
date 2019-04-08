@@ -2,9 +2,10 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: {{ template "blockchain-network.fullname" . }}-ca
+  name: {{ template "blockchain.name" . }}-ca
   labels:
-    app: {{ template "blockchain-network.name" . }}
+    name: {{ template "blockchain.name" . }}-ca
+    app: {{ template "blockchain.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -12,13 +13,13 @@ spec:
   replicas: 1
   template:
     metadata:
-      name: {{ template "blockchain-network.fullname" . }}-ca
+      name: {{ template "blockchain.name" . }}-ca
       labels:
-        app: {{ template "blockchain-network.name" . }}
+        app: {{ template "blockchain.name" . }}
         chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
-        name: {{ template "blockchain-network.fullname" . }}-ca
+        name: {{ template "blockchain.name" . }}-ca
     spec:
       volumes:
       - name: {{ template "blockchain-shared-pvc.name" . }}

@@ -10,7 +10,7 @@ metadata:
     volume.beta.kubernetes.io/storage-class: "ibmc-file-silver"
 spec:
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 20Gi

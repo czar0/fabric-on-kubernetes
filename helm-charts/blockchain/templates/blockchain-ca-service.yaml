@@ -2,18 +2,18 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ template "blockchain-network.name" . }}-ca
+  name: {{ template "blockchain.name" . }}-ca
   labels:
-    app: {{ template "blockchain-network.name" . }}
+    app: {{ template "blockchain.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
-    run: {{ template "blockchain-network.name" . }}-ca
+    run: {{ template "blockchain.name" . }}-ca
 spec:
   type: NodePort
   selector:
-    name: {{ template "blockchain-network.name" . }}-ca
-    app: {{ template "blockchain-network.name" . }}
+    name: {{ template "blockchain.name" . }}-ca
+    app: {{ template "blockchain.name" . }}
     release: {{ .Release.Name }}
   ports:
   - protocol: TCP

@@ -20,7 +20,7 @@ helm init
 Deploy all of the charts by running the following commands:
 
 ```bash
-./deploy_charts.sh startNetwork
+./deploy_charts.sh start
 ```
 
 ### Clean the environment
@@ -28,7 +28,7 @@ Deploy all of the charts by running the following commands:
 Clean up the environment by running the following commands:
 
 ```bash
-./deploy_charts.sh cleanEnvironment
+./deploy_charts.sh clean
 ```
 
 ## Deploying the Charts Manually
@@ -44,6 +44,6 @@ Use the following instructions to deploy each chart manually.
 * Deploy the blockchain network chart by running the following commands:
 
   ```bash
-  cd ./blockchain-network
+  cd ./blockchain
   helm install --name blockchain .
   ```

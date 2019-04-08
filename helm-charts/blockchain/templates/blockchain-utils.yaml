@@ -4,7 +4,7 @@ kind: Pod
 metadata:
   name: utils
   labels:
-    app: {{ template "blockchain-network.name" . }}
+    app: {{ template "blockchain.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -66,15 +66,15 @@ spec:
         rm -f /shared/status_cryptogen_complete
     env:
      - name: PEERHOST1
-       value: {{ template "blockchain-network.name" . }}-org1peer1
+       value: {{ template "blockchain.name" . }}-org1peer1
      - name: PEERPORT1
-       value: "5010"
+       value: "30110"
      - name: PEERHOST2
-       value: {{ template "blockchain-network.name" . }}-org2peer1
+       value: {{ template "blockchain.name" . }}-org2peer1
      - name: PEERPORT2
-       value: "5010"
+       value: "30210"
      - name: ORDERER_URL
-       value: {{ template "blockchain-network.name" . }}-orderer:31010
+       value: {{ template "blockchain.name" . }}-orderer:31010
      - name: FABRIC_CFG_PATH
        value: /shared
     # - name: GODEBUG
@@ -106,4 +106,3 @@ spec:
     volumeMounts:
     - mountPath: /shared
       name: {{ template "blockchain-shared-pvc.name" . }}
-

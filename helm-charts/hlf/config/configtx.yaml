@@ -20,6 +20,7 @@ Organizations:
 
         # MSPDir is the filesystem path which contains the MSP configuration
         MSPDir: ./cryptos/OrdererMSP
+        # MSPDir: ./cryptos/ordererOrganizations/example.com/msp
 
         # Policies defines the set of policies at this level of the config tree
         # For organization policies, their canonical path is usually
@@ -44,6 +45,7 @@ Organizations:
         ID: Org1MSP
 
         MSPDir: ./cryptos/Org1MSP
+        # MSPDir: ./cryptos/peerOrganizations/org1.example.com/msp
 
         # Policies defines the set of policies at this level of the config tree
         # For organization policies, their canonical path is usually
@@ -58,6 +60,9 @@ Organizations:
             Admins:
                 Type: Signature
                 Rule: "OR('Org1MSP.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('Org1MSP.peer')"
 
         # leave this flag set to true.
         AnchorPeers:
@@ -76,8 +81,9 @@ Organizations:
         ID: Org2MSP
 
         MSPDir: ./cryptos/Org2MSP
+        # MSPDir: ./cryptos/peerOrganizations/org2.example.com/msp
 
-        # Policies defines the set of policies at this level of the config tree
+ # Policies defines the set of policies at this level of the config tree
         # For organization policies, their canonical path is usually
         #   /Channel/<Application|Orderer>/<OrgName>/<PolicyName>
         Policies:
@@ -90,6 +96,9 @@ Organizations:
             Admins:
                 Type: Signature
                 Rule: "OR('Org2MSP.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('Org2MSP.peer')"
 
         AnchorPeers:
             # AnchorPeers defines the location of peers which can be used
@@ -145,8 +154,12 @@ Capabilities:
     # used with prior release orderers.
     # Set the value of the capability to true to require it.
     Application: &ApplicationCapabilities
+        # V2.0 for Application enables the new non-backwards compatible
+        # features and fixes of fabric v2.0.
+        V2_0: false
         # V1.3 for Application enables the new non-backwards compatible
-        # features and fixes of fabric v1.3.
+        # features and fixes of fabric v1.3 (note, this need not be set if
+        # later version capabilities are set)
         V1_3: true
         # V1.2 for Application enables the new non-backwards compatible
         # features and fixes of fabric v1.2 (note, this need not be set if
@@ -184,6 +197,12 @@ Application: &ApplicationDefaults
         Admins:
             Type: ImplicitMeta
             Rule: "MAJORITY Admins"
+        LifecycleEndorsement:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Endorsement"
+        Endorsement:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Endorsement"
 
     Capabilities:
         <<: *ApplicationCapabilities
@@ -292,21 +311,28 @@ Channel: &ChannelDefaults
 #
 ################################################################################
 Profiles:
+
     OneOrgOrdererGenesis:
+        <<: *ChannelDefaults
         Orderer:
             <<: *OrdererDefaults
             Organizations:
                 - *OrdererOrg
+            Capabilities:
+                <<: *OrdererCapabilities
         Consortiums:
             SampleConsortium:
                 Organizations:
                     - *Org1
     OneOrgChannel:
         Consortium: SampleConsortium
+        <<: *ChannelDefaults
         Application:
             <<: *ApplicationDefaults
             Organizations:
                 - *Org1
+            Capabilities:
+                <<: *ApplicationCapabilities
 
     TwoOrgsOrdererGenesis:
         <<: *ChannelDefaults

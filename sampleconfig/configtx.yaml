@@ -1,3 +1,9 @@
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+---
 ################################################################################
 #
 #   Section: Organizations
@@ -58,14 +64,17 @@ Organizations:
             Admins:
                 Type: Signature
                 Rule: "OR('Org1MSP.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('Org1MSP.peer')"
 
         # leave this flag set to true.
         AnchorPeers:
             # AnchorPeers defines the location of peers which can be used
             # for cross org gossip communication.  Note, this value is only
             # encoded in the genesis block in the Application section context
-            - Host: blockchain-org1peer1
-              Port: 30110
+            - Host: peer0.org1.example.com
+              Port: 7051
 
     - &Org2
         # DefaultOrg defines the organization which is used in the sampleconfig
@@ -90,13 +99,16 @@ Organizations:
             Admins:
                 Type: Signature
                 Rule: "OR('Org2MSP.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('Org2MSP.peer')"
 
         AnchorPeers:
             # AnchorPeers defines the location of peers which can be used
             # for cross org gossip communication.  Note, this value is only
             # encoded in the genesis block in the Application section context
-            - Host: blockchain-org2peer1
-              Port: 30210
+            - Host: peer0.org2.example.com
+              Port: 9051
 
 ################################################################################
 #
@@ -145,8 +157,12 @@ Capabilities:
     # used with prior release orderers.
     # Set the value of the capability to true to require it.
     Application: &ApplicationCapabilities
+        # V2.0 for Application enables the new non-backwards compatible
+        # features and fixes of fabric v2.0.
+        V2_0: false
         # V1.3 for Application enables the new non-backwards compatible
-        # features and fixes of fabric v1.3.
+        # features and fixes of fabric v1.3 (note, this need not be set if
+        # later version capabilities are set)
         V1_3: true
         # V1.2 for Application enables the new non-backwards compatible
         # features and fixes of fabric v1.2 (note, this need not be set if
@@ -184,6 +200,12 @@ Application: &ApplicationDefaults
         Admins:
             Type: ImplicitMeta
             Rule: "MAJORITY Admins"
+        LifecycleEndorsement:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Endorsement"
+        Endorsement:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Endorsement"
 
     Capabilities:
         <<: *ApplicationCapabilities
@@ -202,7 +224,7 @@ Orderer: &OrdererDefaults
     OrdererType: solo
 
     Addresses:
-        - blockchain-orderer:31010
+        - orderer.example.com:7050
 
     # Batch Timeout: The amount of time to wait before creating a batch
     BatchTimeout: 2s
@@ -292,22 +314,29 @@ Channel: &ChannelDefaults
 #
 ################################################################################
 Profiles:
+
     OneOrgOrdererGenesis:
+        <<: *ChannelDefaults
         Orderer:
             <<: *OrdererDefaults
             Organizations:
                 - *OrdererOrg
+            Capabilities:
+                <<: *OrdererCapabilities
         Consortiums:
             SampleConsortium:
                 Organizations:
                     - *Org1
     OneOrgChannel:
         Consortium: SampleConsortium
+        <<: *ChannelDefaults
         Application:
             <<: *ApplicationDefaults
             Organizations:
                 - *Org1
-
+            Capabilities:
+                <<: *ApplicationCapabilities
+                
     TwoOrgsOrdererGenesis:
         <<: *ChannelDefaults
         Orderer:
@@ -323,6 +352,7 @@ Profiles:
                     - *Org2
     TwoOrgsChannel:
         Consortium: SampleConsortium
+        <<: *ChannelDefaults
         Application:
             <<: *ApplicationDefaults
             Organizations:
@@ -341,6 +371,56 @@ Profiles:
             Kafka:
                 Brokers:
                 - kafka.example.com:9092
+
+            Organizations:
+            - *OrdererOrg
+            Capabilities:
+                <<: *OrdererCapabilities
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+            - <<: *OrdererOrg
+        Consortiums:
+            SampleConsortium:
+                Organizations:
+                - *Org1
+                - *Org2
+
+    SampleMultiNodeEtcdRaft:
+        <<: *ChannelDefaults
+        Capabilities:
+            <<: *ChannelCapabilities
+        Orderer:
+            <<: *OrdererDefaults
+            OrdererType: etcdraft
+            EtcdRaft:
+                Consenters:
+                - Host: orderer.example.com
+                  Port: 7050
+                  ClientTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt
+                  ServerTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt
+                - Host: orderer2.example.com
+                  Port: 7050
+                  ClientTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer2.example.com/tls/server.crt
+                  ServerTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer2.example.com/tls/server.crt
+                - Host: orderer3.example.com
+                  Port: 7050
+                  ClientTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer3.example.com/tls/server.crt
+                  ServerTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer3.example.com/tls/server.crt
+                - Host: orderer4.example.com
+                  Port: 7050
+                  ClientTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer4.example.com/tls/server.crt
+                  ServerTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer4.example.com/tls/server.crt
+                - Host: orderer5.example.com
+                  Port: 7050
+                  ClientTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer5.example.com/tls/server.crt
+                  ServerTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer5.example.com/tls/server.crt
+            Addresses:
+                - orderer.example.com:7050
+                - orderer2.example.com:7050
+                - orderer3.example.com:7050
+                - orderer4.example.com:7050
+                - orderer5.example.com:7050
 
             Organizations:
             - *OrdererOrg

@@ -318,13 +318,13 @@ startNetworkOfficialCharts() {
     done
 
     colorEcho "Create channel" 134
-    kubectl exec --namespace $namespace $peer_pod -- CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel create -o ${orderer_name}-hfl-ord:${orderer_port} -c $channel_name -f /hl_config/channel/${channel_name}_tx.pb
+    kubectl exec --namespace $namespace $peer_pod -- bash -c "CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel create -o ${orderer_name}-hlf-ord:${orderer_port} -c $channel_name -f /hl_config/channel/${channel_name}_tx.pb"
 
     colorEcho "Fetch channel" 134
-    kubectl exec --namespace $namespace $peer_pod -- CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer fetch config /${channel_name}.block -c $channel_name -o ${orderer_name}:${orderer_port}
+    kubectl exec --namespace $namespace $peer_pod -- bash -c "CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel fetch config /${channel_name}.block -c $channel_name -o ${orderer_name}-hlf-ord:${orderer_port}"
 
     colorEcho "Join channel" 134
-    kubectl exec --namespace $namespace $peer_pod -- CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel join -b /${channel_name}.block
+    kubectl exec --namespace $namespace $peer_pod -- bash -c "CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel join -b /${channel_name}.block"
 }
 
 create_ca() {

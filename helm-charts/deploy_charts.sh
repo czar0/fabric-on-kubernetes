@@ -23,12 +23,11 @@ FABRIC_VERSION=1.4
     type helm >/dev/null 2>&1 || { echo >&2 "I require helm but it is not installed.  Aborting."; exit 1; }
 }
 
-#
-# colorEcho:  Prints the user specified string to the screen using the specified color.
-#             If no color is provided, the default no color option is used.
+# echoc: Prints the user specified string to the screen using the specified colour.
 #
 # Parameters: ${1} - The string to print.
-#             ${2} - The color to use for printing the string.
+#             ${2} - The intensity of the colour.
+#             ${3} - The colour to use for printing the string.
 #
 #             NOTE: The following color options are available:
 #
@@ -40,27 +39,62 @@ FABRIC_VERSION=1.4
 #                   [0|1]35, [dark|light] purple
 #                   [0|1]36, [dark|light] cyan
 #
- colorEcho() {
+ echoc() {
     # Check for proper usage
-    if [[ ${#} == 0 || ${#} > 2 ]]; then
-        echo "usage: ${FUNCNAME} <string> [<0|1>3<0-6>]"
-        return -1
+    if [[ ${#} != 3 ]]; then
+        echo "usage: ${FUNCNAME} <string> [light|dark] [black|red|green|brown|blue|pruple|cyan]"
+        exit 1
     fi
 
-    # Set default color to white
-    MSSG=${1}
-    CLRCODE=${2}
-    LIGHTDARK=1
-    MSGCOLOR=0
+    local message=${1}
 
-    # If color code was provided, then set it
-    if [[ ${#} == 2 ]]; then
-        LIGHTDARK=${CLRCODE:0:1}
-        MSGCOLOR=${CLRCODE:1}
+    case $2 in
+        dark )
+            intensity=0
+            ;;
+        light )
+            intensity=1
+            ;;
+    esac
+
+    if [[ -z $intensity ]]; then
+        echo "${2} intensity not recognised"
+        exit 1
     fi
+
+    case $3 in 
+        black )
+            colour_code=${intensity}30
+            ;;
+        red )
+            colour_code=${intensity}31
+            ;;
+        green )
+            colour_code=${intensity}32
+            ;;
+        brown )
+            colour_code=${intensity}33
+            ;;
+        blue )
+            colour_code=${intensity}34
+            ;;
+        purple )
+            colour_code=${intensity}35
+            ;;
+        cyan )
+            colour_code=${intensity}36
+            ;;
+    esac
+        
+    if [[ -z $colour_code ]]; then
+        echo "${1} colour not recognised"
+        exit 1
+    fi
+
+    colour_code=${colour_code:1}
 
     # Print out the message
-    echo -e -n "${MSSG}" | awk '{print "\033['${LIGHTDARK}';'${MSGCOLOR}'m" $0 "\033[1;0m"}'
+    echo -e -n "${message}" | awk '{print "\033['${intensity}';'${colour_code}'m" $0 "\033[1;0m"}'
 }
 
 #
@@ -126,7 +160,7 @@ FABRIC_VERSION=1.4
     # Ensure arguments were passed
     if [[ ${#} -ne 2 ]]; then
         echo "Usage: ${FUNCNAME} <num_running_pods> <num_completed_pods>"
-        return -1
+        exit 1
     fi
 
     NUM_RUNNING=${1}
@@ -138,22 +172,22 @@ FABRIC_VERSION=1.4
     # Wait for the pods to initialize
     while [ "${PODS_RUNNING}" -ne ${NUM_RUNNING} ] || [ "${PODS_COMPLETED}" -ne ${NUM_COMPLETED} ]; do
         if [ "${PODS_ERROR}" -gt 0 ]; then
-            colorEcho "\n$(basename $0): error: the following pods failed with errors:" 131
-            colorEcho "$(echo "$PODS" | grep Error)" 131
+            echoc "\n$(basename $0): error: the following pods failed with errors:" light red
+            echoc "$(echo "$PODS" | grep Error)" light red
 
             # Show the logs for failed pods
             for i in $(echo "$PODS" | grep Error | awk '{print $1}'); do
-                # colorEcho "\n$ kubectl describe pod ${i}" 132
+                # echoc "\n$ kubectl describe pod ${i}" light green
                 # kubectl describe pod "${i}"
 
                 if [[ ${i} =~ .*channel-create.* ]]; then
-                    colorEcho "\n$ kubectl logs ${i} createchanneltx" 132
+                    echoc "\n$ kubectl logs ${i} createchanneltx" light green
                     kubectl logs "${i}" "createchanneltx"
 
-                    colorEcho "\n$ kubectl logs ${i} createchannel" 132
+                    echoc "\n$ kubectl logs ${i} createchannel" light green
                     kubectl logs "${i}" "createchannel"
                 else
-                    colorEcho "\n$ kubectl logs ${i}" 132
+                    echoc "\n$ kubectl logs ${i}" light green
                     kubectl logs "${i}"
                 fi
             done
@@ -161,13 +195,13 @@ FABRIC_VERSION=1.4
             exit -1
         fi
 
-        colorEcho "Waiting for the pods to initialize..." 134
+        echoc "Waiting for the pods to initialize..." light blue
         sleep 2
 
         getPodStatus
     done
 
-    colorEcho "Pods initialized successfully!\n" 134
+    echoc "Pods initialized successfully!\n" light blue
 }
 
 #
@@ -177,8 +211,8 @@ FABRIC_VERSION=1.4
     LINT_OUTPUT=$(helm lint .)
 
     if [[ ${?} -ne 0 ]]; then
-        colorEcho "\n$(basename $0): error: '$(basename $(pwd))' linting failed with errors:" 131
-        colorEcho "${LINT_OUTPUT}" 131
+        echoc "\n$(basename $0): error: '$(basename $(pwd))' linting failed with errors:" light red
+        echoc "${LINT_OUTPUT}" light red
         exit -1
     fi
 }
@@ -193,7 +227,7 @@ startNetworkLocalCharts() {
 
     # Install the chart
     lintChart
-    colorEcho "\n$ helm install --name ${RELEASE_NAME} ." 132
+    echoc "\n$ helm install --name ${RELEASE_NAME} ." light green
     helm install --name ${RELEASE_NAME} .
 
     # Copy config
@@ -230,42 +264,37 @@ startNetworkOfficialCharts() {
         rm -rf $cryptos_path
     fi
 
-    colorEcho "=======================================================" 136
-    colorEcho "===== Fabric on Kubernetes - Official Helm Charts =====" 136
-    colorEcho "=======================================================" 136
+    echoc "=======================================================" light cyan
+    echoc "===== Fabric on Kubernetes - Official Helm Charts =====" light cyan
+    echoc "=======================================================" light cyan
 
     echo
-    colorEcho "Setting up the network" 134
+    echoc "Setting up the network" light blue
     echo
 
     read -p "Organisations [1]: " orgs
     orgs=${orgs:-1}
-    colorEcho $orgs 132
+    echoc $orgs light green
 
     read -p "Peers per org [1]: " peers
     peers=${peers:-1}
-    colorEcho $peers 132
+    echoc $peers light green
 
     read -p "CAs per org [1]: " cas
     cas=${cas:-1}
-    colorEcho $cas 132
+    echoc $cas light green
 
     read -p "Orderers per org [1]: " orderers
     orderers=${orderers:-1}
-    colorEcho $orderers 132
+    echoc $orderers light green
 
-    colorEcho "================================" 136
-    colorEcho "==== Configuring Kubernetes ====" 136
-    colorEcho "================================" 136
+    echoc "================================" light cyan
+    echoc "==== Configuring Kubernetes ====" light cyan
+    echoc "================================" light cyan
     
     read -p "Namespace [blockchain]: " namespace
     export namespace=${namespace:-blockchain}
-    colorEcho $namespace 132
-
-    # colorEcho "============================" 134
-    # colorEcho "==== Generating Cryptos ====" 134
-    # colorEcho "============================" 134
-    # generate_cryptos ${base_path}/config $cryptos_path
+    echoc $namespace light green
 
     create_ca
 
@@ -279,27 +308,28 @@ startNetworkOfficialCharts() {
     
     read -p "Channel [mychannel]: " channel_name
     channel_name=${channel_name:-mychannel}
-    colorEcho $channel_name 132
+    echoc $channel_name light green
 
-    generate_channeltx $channel_name ${base_path} ${base_path}/config $cryptos_path
+    generate_genesis $base_path ${base_path}/config $cryptos_path OneOrgOrdererGenesis
+    generate_channeltx $channel_name $base_path ${base_path}/config $cryptos_path OneOrgOrdererGenesis OneOrgChannel Org1MSP
 
     kubectl create secret generic --namespace $namespace hlf--${channel_name}-genesis --from-file=genesis.block=${base_path}/channels/$channel_name/genesis_block.pb
     kubectl create secret generic --namespace $namespace hlf--${channel_name}-channel --from-file=${base_path}/channels/$channel_name/${channel_name}_tx.pb
     kubectl create secret generic --namespace $namespace hlf--${channel_name}-org1anchors --from-file=${base_path}/channels/$channel_name/${org_msp}_anchors_tx.pb
 
-    colorEcho "Create and set up Orderer" 134
+    echoc "Create and set up Orderer" light blue
     helm install stable/hlf-ord --namespace $namespace --name $orderer_name --set image.tag=${hlf_version},service.port=${orderer_port},ord.mspID=${orderer_msp},ord.type=${orderer_type},secrets.ord.cert=hlf--${orderer_name}-idcert,secrets.ord.key=hlf--${orderer_name}-idkey,secrets.ord.caCert=hlf--ca-cert,secrets.genesis=hlf--${channel_name}-genesis,secrets.adminCert=hlf--${orderer_name}-admincert
 
-    colorEcho "Create and set up Peer" 134
+    echoc "Create and set up Peer" light blue
     helm install stable/hlf-peer --namespace $namespace --name $peer_name --set image.tag=${hlf_version},peer.couchdbInstance=cdb-${peer_name},peer.mspID=${peer_msp},service.portRequest=${peer_port},secrets.peer.cert=hlf--${peer_name}-idcert,secrets.peer.key=hlf--${peer_name}-idkey,secrets.peer.caCert=hlf--ca-cert,secrets.channel=hlf--${channel_name}-channel,secrets.adminCert=hlf--${org}-admincert,secrets.adminKey=hlf--${org}-adminkey
 
     orderer_pod=$(kubectl get pods --namespace $namespace -l "app=hlf-ord,release=${orderer_name}" -o jsonpath="{.items[0].metadata.name}")
     status=$(kubectl describe pod --namespace $namespace -l "app=hlf-ord,release=${orderer_name}" | grep -m2 "Ready" | head -n1 |  awk '{print $2}')
     while [ "${status}" != "True" ]; do
-        colorEcho "Waiting for ${orderer_name} to start. Status = ${status}" 135
+        echoc "Waiting for ${orderer_name} to start. Status = ${status}" light purple
         sleep 5
         if [ "${status}" == "Error" ]; then
-            colorEcho "There is an error in ${orderer_name}. Please run 'kubectl logs ${orderer_name}' or 'kubectl describe pod ${orderer_name}'." 131
+            echoc "There is an error in ${orderer_name}. Please run 'kubectl logs ${orderer_name}' or 'kubectl describe pod ${orderer_name}'." light red
             exit 1
         fi
         status=$(kubectl describe pod --namespace $namespace -l "app=hlf-ord,release=${orderer_name}" | grep -m2 "Ready" | head -n1 |  awk '{print $2}')
@@ -308,46 +338,49 @@ startNetworkOfficialCharts() {
     peer_pod=$(kubectl get pods --namespace $namespace -l "app=hlf-peer,release=${peer_name}" -o jsonpath="{.items[0].metadata.name}")
     status=$(kubectl describe pod --namespace $namespace -l "app=hlf-peer,release=${peer_name}" | grep -m2 "Ready" | head -n1 |  awk '{print $2}')
     while [ "${status}" != "True" ]; do
-        colorEcho "Waiting for ${peer_name} to start. Status = ${status}" 135
+        echoc "Waiting for ${peer_name} to start. Status = ${status}" light purple
         sleep 5
         if [ "${status}" == "Error" ]; then
-            colorEcho "There is an error in ${peer_name}. Please run 'kubectl logs ${peer_name}' or 'kubectl describe pod ${peer_name}'." 131
+            echoc "There is an error in ${peer_name}. Please run 'kubectl logs ${peer_name}' or 'kubectl describe pod ${peer_name}'." light red
             exit 1
         fi
         status=$(kubectl describe pod --namespace $namespace -l "app=hlf-peer,release=${peer_name}" | grep -m2 "Ready" | head -n1 |  awk '{print $2}')
     done
 
-    colorEcho "Create channel" 134
+    echoc "Create channel" light blue
     kubectl exec --namespace $namespace $peer_pod -- bash -c "CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel create -o ${orderer_name}-hlf-ord:${orderer_port} -c $channel_name -f /hl_config/channel/${channel_name}_tx.pb"
 
-    colorEcho "Fetch channel" 134
+    echoc "Fetch channel" light blue
     kubectl exec --namespace $namespace $peer_pod -- bash -c "CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel fetch config /${channel_name}.block -c $channel_name -o ${orderer_name}-hlf-ord:${orderer_port}"
 
-    colorEcho "Join channel" 134
+    echoc "Join channel" light blue
     kubectl exec --namespace $namespace $peer_pod -- bash -c "CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel join -b /${channel_name}.block"
+
+    # echoc "Update channel with anchor peers" light blue
+    # kubectl exec --namespace $namespace $peer_pod -- bash -c "CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel update -o -o ${orderer_name}-hlf-ord:${orderer_port} -c $channel_name -f /hl_config/channel/${org_msp}_anchors_tx.pb"
 }
 
 create_ca() {
-    colorEcho "===============================" 134
-    colorEcho "==== Certificate Authority ====" 134
-    colorEcho "===============================" 134
+    echoc "===============================" light blue
+    echoc "==== Certificate Authority ====" light blue
+    echoc "===============================" light blue
 
     ca_port="7054"
 
     read -p "CA name [ca]: " ca_name
     export ca_name=${ca_name:-ca}
-    colorEcho $ca_name 132
+    echoc $ca_name light green
 
-    colorEcho "Create and set up CA" 134
+    echoc "Create and set up CA" light blue
     helm install stable/hlf-ca --namespace $namespace --name $ca_name --set image.tag=${hlf_version},config.hlfToolsVersion=${hlf_version},service.port=${ca_port},caName=${ca_name},postgresql.enabled=true
 
     ca_pod=$(kubectl get pods --namespace $namespace -l "app=hlf-ca,release=${ca_name}" -o jsonpath="{.items[0].metadata.name}")
     status=$(kubectl describe pod --namespace $namespace -l "app=hlf-ca,release=${ca_name}" | grep -m2 "Ready" | tail -n1 |  awk '{print $2}')
     while [ "${status}" != "True" ]; do
-        colorEcho "Waiting for $ca_pod to start. Status = ${status}" 135
+        echoc "Waiting for $ca_pod to start. Status = ${status}" light purple
         sleep 5
         if [ "${status}" == "Error" ]; then
-            colorEcho "There is an error in $ca_pod. Please run 'kubectl logs $ca_pod' or 'kubectl describe pod $ca_pod'." 131
+            echoc "There is an error in $ca_pod. Please run 'kubectl logs $ca_pod' or 'kubectl describe pod $ca_pod'." light red
             exit 1
         fi
         status=$(kubectl describe pod --namespace $namespace -l "app=hlf-ca,release=${ca_name}" | grep -m2 "Ready" | tail -n1 |  awk '{print $2}')
@@ -357,7 +390,7 @@ create_ca() {
     # kubectl exec --namespace $namespace $ca_pod -- cat /var/hyperledger/fabric-ca/msp/signcerts/cert.pem
     # kubectl exec --namespace $namespace $ca_pod -- fabric-ca-client getcacert -u http://$CA_ADMIN:$CA_PASSWORD@$SERVICE_DNS:7054
 
-    # colorEcho "Copying credentials to local" 134
+    # echoc "Copying credentials to local" light blue
     # kubectl cp --namespace $namespace $ca_pod:/var/hyperledger/fabric-ca/msp ${cryptos_path}/${ca_name} 1>/dev/null
 
     # kubectl exec --namespace $namespace $ca_pod -- bash -c "mkdir -p /var/hyperledger/fabric-ca/msp/signcerts; mkdir -p /var/hyperledger/fabric-ca/msp/keystore"
@@ -367,31 +400,31 @@ create_ca() {
 
 create_admin() {
     if [ -z "$1" ]; then
-		colorEcho "MSP missing" 131
+		echoc "MSP missing" light red
 		exit 1
 	fi
 
     local org_msp="$1"
 
-    colorEcho "Register organisation admin" 134
+    echoc "Register organisation admin" light blue
     read -p "Admin name [org1-admin]: " admin_name
     admin_name=${admin_name:-org1-admin}
-    colorEcho $admin_name 132
+    echoc $admin_name light green
 
     read -p "Admin secret [OrgAdm1nPW]: " admin_secret
     admin_secret=${admin_secret:-OrgAdm1nPW}
-    colorEcho $admin_secret 132
+    echoc $admin_secret light green
 
-    colorEcho "Register the Organisation Admin identity" 134
+    echoc "Register the Organisation Admin identity" light blue
     kubectl exec --namespace $namespace $ca_pod -- fabric-ca-client register --id.name $admin_name --id.secret $admin_secret --id.type client --id.attrs '"hf.Registrar.Roles=peer,user,client",hf.Registrar.Attributes=*,hf.Revoker=true,hf.GenCRL=true,admin=true:ecert,abac.init=true:ecert' -u http://$SERVICE_DNS:7054
 
-    colorEcho "Enroll the Organisation Admin identity in $org_msp" 134
+    echoc "Enroll the Organisation Admin identity in $org_msp" light blue
     kubectl exec --namespace $namespace $ca_pod -- fabric-ca-client enroll -u http://${admin_name}:${admin_secret}@$SERVICE_DNS:7054 -M $org_msp
 
-    # colorEcho "Store $admin_name identity in msp/admincerts" 134
+    # echoc "Store $admin_name identity in msp/admincerts" light blue
     # kubectl exec --namespace $namespace $ca_pod -- fabric-ca-client certificate list --id $admin_name --store msp/admincerts
 
-    colorEcho "Copying credentials to local" 134
+    echoc "Copying credentials to local" light blue
     kubectl cp --namespace $namespace $ca_pod:/var/hyperledger/fabric-ca/$org_msp ${cryptos_path}/${org_msp} 1>/dev/null
 
     mkdir -p ${cryptos_path}/${org_msp}/admincerts
@@ -399,60 +432,60 @@ create_admin() {
 
     export org=`echo "$org_msp" | awk '{print tolower($0)}'`
 
-    colorEcho "Add org-admincert secret" 134
+    echoc "Add org-admincert secret" light blue
     org_cert=$(ls ${cryptos_path}/${org_msp}/admincerts/*.pem)
     kubectl create secret generic --namespace $namespace hlf--${org}-admincert --from-file=cert.pem=$org_cert
 
-    colorEcho "Add org-adminkey secret" 134
+    echoc "Add org-adminkey secret" light blue
     org_key=$(ls ${cryptos_path}/${org_msp}/keystore/*_sk)
     kubectl create secret generic --namespace $namespace hlf--${org}-adminkey --from-file=key.pem=$org_key
 }
 
 create_orderer() {
-    colorEcho "=================" 134
-    colorEcho "==== Orderer ====" 134
-    colorEcho "=================" 134
+    echoc "=================" light blue
+    echoc "==== Orderer ====" light blue
+    echoc "=================" light blue
 
-    colorEcho "Register Orderer to CA" 134
+    echoc "Register Orderer to CA" light blue
 
     read -p "Orderer name [orderer]: " orderer_name
     export orderer_name=${orderer_name:-orderer}
-    colorEcho $orderer_name 132
+    echoc $orderer_name light green
 
     read -p "Orderer secret [orderer_pw]: " orderer_secret
     orderer_secret=${orderer_secret:-orderer_pw}
-    colorEcho $orderer_secret 132
+    echoc $orderer_secret light green
 
     export orderer_msp="OrdererMSP"
     export orderer_port="31010"
     export orderer_type="solo"
 
-    colorEcho "Register $orderer_name" 134
+    echoc "Register $orderer_name" light blue
     kubectl exec --namespace $namespace $ca_pod -- fabric-ca-client register --id.name $orderer_name --id.secret $orderer_secret --id.type orderer
 
-    colorEcho "Enroll $orderer_name" 134
+    echoc "Enroll $orderer_name" light blue
     kubectl exec --namespace $namespace $ca_pod -- fabric-ca-client enroll -d -u http://${orderer_name}:${orderer_secret}@$SERVICE_DNS:7054 -M $orderer_msp
 
-    colorEcho "Copying credentials to local" 134
+    echoc "Copying credentials to local" light blue
     kubectl cp --namespace $namespace $ca_pod:/var/hyperledger/fabric-ca/${orderer_msp} ${cryptos_path}/${orderer_msp} 1>/dev/null
 
     mkdir -p ${cryptos_path}/${orderer_msp}/admincerts
     cp ${cryptos_path}/${orderer_msp}/signcerts/* ${cryptos_path}/${orderer_msp}/admincerts
 
-    colorEcho "Add orderer public certificate" 134
+    echoc "Add orderer public certificate" light blue
     orderer_cert=$(ls ${cryptos_path}/${orderer_msp}/admincerts/*.pem)
     kubectl create secret generic --namespace $namespace hlf--${orderer_name}-idcert --from-file=cert.pem=${orderer_cert}
     kubectl create secret generic --namespace $namespace hlf--${orderer_name}-admincert --from-file=cert.pem=${orderer_cert}
     # orderer_cert=$(ls ${cryptos_path}/ordererOrganizations/example.com/users/Admin@example.com/msp/signcerts/*.pem)
     # kubectl create secret generic --namespace $namespace hlf--${orderer_name}-idcert --from-file=cert.pem=${orderer_cert}
 
-    colorEcho "Add orderer signining private key" 134
+    echoc "Add orderer signining private key" light blue
     orderer_key=$(ls ${cryptos_path}/${orderer_msp}/keystore/*_sk)
     kubectl create secret generic --namespace $namespace hlf--${orderer_name}-idkey --from-file=key.pem=${orderer_key}
     # orderer_key=$(ls ${cryptos_path}/ordererOrganizations/example.com/users/Admin@example.com/msp/keystore/*_sk)
     # kubectl create secret generic --namespace $namespace hlf--${orderer_name}-idkey --from-file=key.pem=${orderer_key}
 
-    colorEcho "Add cacert secret" 134
+    echoc "Add cacert secret" light blue
     ca_cert=$(ls ${cryptos_path}/${orderer_msp}/cacerts/*.pem)
     kubectl create secret generic --namespace $namespace hlf--ca-cert --from-file=cacert.pem=$ca_cert
     # ca_cert=$(ls ${cryptos_path}/ordererOrganizations/example.com/ca/*.pem)
@@ -460,87 +493,153 @@ create_orderer() {
 }
 
 create_peer() {
-    colorEcho "==============" 134
-    colorEcho "==== Peer ====" 134
-    colorEcho "==============" 134
+    echoc "==============" light blue
+    echoc "==== Peer ====" light blue
+    echoc "==============" light blue
 
-    colorEcho "Register Peer to CA" 134
+    echoc "Register Peer to CA" light blue
     read -p "Peer name [org1peer1]: " peer_name
     export peer_name=${peer_name:-org1peer1}
-    colorEcho $peer_name 132
+    echoc $peer_name light green
 
     read -p "Peer secret [org1peer1_pw]: " peer_secret
     peer_secret=${peer_secret:-org1peer1_pw}
-    colorEcho $peer_secret
+    echoc $peer_secret
 
     export peer_msp="Org1MSP"
     export peer_port="7051"
 
-    colorEcho "Register $peer_name" 134
+    echoc "Register $peer_name" light blue
     kubectl exec --namespace $namespace $ca_pod -- fabric-ca-client register --id.name $peer_name --id.secret $peer_secret --id.type peer
 
-    colorEcho "Enroll $peer_name" 134
+    echoc "Enroll $peer_name" light blue
     kubectl exec --namespace $namespace $ca_pod -- fabric-ca-client enroll -d -u http://${peer_name}:${peer_secret}@$SERVICE_DNS:${ca_port} -M ${peer_msp}_${peer_name}
 
-    colorEcho "Store $admin_name identity in msp/admincerts" 134
+    echoc "Store $admin_name identity in msp/admincerts" light blue
     kubectl exec --namespace $namespace $ca_pod -- fabric-ca-client certificate list --id $peer_name --store msp/admincerts
 
-    colorEcho "Copying credentials to local" 134
+    echoc "Copying credentials to local" light blue
     kubectl cp --namespace $namespace $ca_pod:/var/hyperledger/fabric-ca/${peer_msp}_${peer_name} ${cryptos_path}/${peer_msp}_${peer_name} 1>/dev/null
 
     mkdir -p ${cryptos_path}/${peer_msp}_${peer_name}/admincerts
     cp ${cryptos_path}/${peer_msp}_${peer_name}/signcerts/* ${cryptos_path}/${peer_msp}_${peer_name}/admincerts
 
-    colorEcho "Add peer public certificate" 134
+    echoc "Add peer public certificate" light blue
     peer_cert=$(ls ${cryptos_path}/${peer_msp}_${peer_name}/signcerts/*.pem)
     kubectl create secret generic --namespace $namespace hlf--${peer_name}-idcert --from-file=cert.pem=${peer_cert}
     # kubectl create secret generic --namespace $namespace hlf--${peer_name}-admincert --from-file=cert.pem=${peer_cert}
     # peer_cert=$(ls ${cryptos_path}/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/*.pem)
     # kubectl create secret generic --namespace $namespace hlf--${peer_name}-idcert --from-file=cert.pem=${peer_cert}
 
-    colorEcho "Add peer signining private key" 134
+    echoc "Add peer signining private key" light blue
     peer_key=$(ls ${cryptos_path}/${peer_msp}_${peer_name}/keystore/*_sk)
     kubectl create secret generic --namespace $namespace hlf--${peer_name}-idkey --from-file=key.pem=${peer_key}
     # kubectl create secret generic --namespace $namespace hlf--${peer_name}-adminkey --from-file=key.pem=${peer_key}
     # peer_key=$(ls ${cryptos_path}/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/*_sk)
     # kubectl create secret generic --namespace $namespace hlf--${peer_name}-idkey --from-file=key.pem=${peer_key}
 
-    colorEcho "Create and set up CouchDB state to attach to ${peer_name}" 134
+    echoc "Create and set up CouchDB state to attach to ${peer_name}" light blue
     helm install stable/hlf-couchdb --namespace $namespace --name cdb-${peer_name} --set image.tag=${thirdparty_version}
     
     cdb_pod=$(kubectl get pods --namespace $namespace -l "app=hlf-couchdb,release=cdb-${peer_name}" -o jsonpath="{.items[0].metadata.name}")
     status=$(kubectl describe pod --namespace $namespace -l "app=hlf-couchdb,release=cdb-${peer_name}" | grep -m2 "Ready" | head -n1 |  awk '{print $2}')
     while [ "${status}" != "True" ]; do
-        colorEcho "Waiting for cdb-${peer_name} to start. Status = ${status}" 135
+        echoc "Waiting for cdb-${peer_name} to start. Status = ${status}" light purple
         sleep 5
         if [ "${status}" == "Error" ]; then
-            colorEcho "There is an error in cdb-${peer_name}. Please run 'kubectl logs cdb-${peer_name}' or 'kubectl describe pod cdb-${peer_name}'." 131
+            echoc "There is an error in cdb-${peer_name}. Please run 'kubectl logs cdb-${peer_name}' or 'kubectl describe pod cdb-${peer_name}'." light red
             exit 1
         fi
         status=$(kubectl describe pod --namespace $namespace -l "app=hlf-couchdb,release=cdb-${peer_name}" | grep -m2 "Ready" | head -n1 |  awk '{print $2}')
     done
 }
 
+# generate genesis block
+# $1: base path
+# $2: config path
+# $3: cryptos directory
+generate_genesis() {
+    if [ -z "$1" ]; then
+		echoc "Base path missing" light red
+		exit 1
+	fi
+    if [ -z "$2" ]; then
+		echoc "Config path missing" light red
+		exit 1
+	fi
+    if [ -z "$3" ]; then
+		echoc "Crypto material path missing" light red
+		exit 1
+	fi
+
+    local base_path="$1"
+    local config_path="$2"
+    local channel_dir="${base_path}/channels/orderer-system-channel"
+    local cryptos_path="$3"
+    local network_profile="$4"
+
+    echoc "Generating genesis block" light cyan
+	echoc "Base path: $base_path" light green
+	echoc "Config path: $config_path" light green
+	echoc "Cryptos path: $cryptos_path" light green
+	echoc "Network profile: $network_profile" light green
+
+    if [ -d "$channel_dir" ]; then
+        rm -rf $channel_dir
+    fi
+    mkdir -p $channel_dir
+
+    # generate genesis block for orderer
+	docker run --rm -v ${config_path}/configtx.yaml:/configtx.yaml \
+                    -v ${channel_dir}:/channels/orderer-system-channel \
+                    -v ${cryptos_path}:/crypto-config \
+                    -e FABRIC_CFG_PATH=/ \
+                    hyperledger/fabric-tools:$FABRIC_TAG \
+                    bash -c " \
+                        configtxgen -profile $network_profile -channelID orderer-system-channel -outputBlock /channels/orderer-system-channel/genesis_block.pb /configtx.yaml;
+                        configtxgen -inspectBlock /channels/orderer-system-channel/genesis_block.pb
+                    "
+	if [ "$?" -ne 0 ]; then
+		echoc "Failed to generate orderer genesis block..." light red
+		exit 1
+	fi
+}
+
 # generate channel config
 # $1: channel_name
 # $2: base path
 # $3: configtx.yml file path
-# $4: output directory
+# $4: cryptos directory
+# $5: network profile name
+# $6: channel profile name
+# $7: org msp
 generate_channeltx() {
     if [ -z "$1" ]; then
-		colorEcho "Channel name missing" 131
+		echoc "Channel name missing" light red
 		exit 1
 	fi
     if [ -z "$2" ]; then
-		colorEcho "Base path missing" 131
+		echoc "Base path missing" light red
 		exit 1
 	fi
     if [ -z "$3" ]; then
-		colorEcho "Config path missing" 131
+		echoc "Config path missing" light red
 		exit 1
 	fi
     if [ -z "$4" ]; then
-		colorEcho "Crypto material path missing" 131
+		echoc "Crypto material path missing" light red
+		exit 1
+	fi
+    if [ -z "$5" ]; then
+		echoc "Network profile missing" light red
+		exit 1
+	fi
+    if [ -z "$6" ]; then
+		echoc "Channel profile missing" light red
+		exit 1
+	fi
+    if [ -z "$7" ]; then
+		echoc "MSP missing" light red
 		exit 1
 	fi
 
@@ -549,59 +648,49 @@ generate_channeltx() {
     local config_path="$3"
     local cryptos_path="$4"
     local channel_dir="${base_path}/channels/${channel_name}"
-    local org_msp=Org1MSP
+    local network_profile="$5"
+    local channel_profile="$6"
+    local org_msp="$7"
 
     if [ -d "$channel_dir" ]; then
         rm -rf $channel_dir
     fi
     mkdir -p $channel_dir
 
-    colorEcho "Generating crypto-config" 136
-	colorEcho "Channel: $channel_name" 132
-	colorEcho "Base path: $base_path" 132
-	colorEcho "Config path: $config_path" 132
-	colorEcho "Channel dir: $channel_dir" 132
-	colorEcho "Cryptos path: $cryptos_path" 132
-
-	# generate genesis block for orderer
-	docker run --rm -v ${config_path}/configtx.yaml:/configtx.yaml \
-                    -v ${channel_dir}:/channels/${channel_name} \
-                    -v ${cryptos_path}:/cryptos \
-                    -e FABRIC_CFG_PATH=/ \
-                    hyperledger/fabric-tools:$FABRIC_VERSION \
-                    bash -c " \
-                        configtxgen -profile OneOrgOrdererGenesis -channelID orderer-system-channel -outputBlock /channels/${channel_name}/genesis_block.pb /configtx.yaml;
-                        configtxgen -inspectBlock /channels/${channel_name}/genesis_block.pb
-                    "
-	if [ "$?" -ne 0 ]; then
-		colorEcho "Failed to generate orderer genesis block..." 131
-		exit 1
-	fi
+    echoc "Generating channel config" light cyan
+	echoc "Channel: $channel_name" light green
+	echoc "Base path: $base_path" light green
+	echoc "Config path: $config_path" light green
+	echoc "Cryptos path: $cryptos_path" light green
+	echoc "Channel dir: $channel_dir" light green
+	echoc "Network profile: $network_profile" light green
+	echoc "Channel profile: $channel_profile" light green
+	echoc "Org MSP: $org_msp" light green
 
 	# generate channel configuration transaction
 	docker run --rm -v ${config_path}/configtx.yaml:/configtx.yaml \
                     -v ${channel_dir}:/channels/${channel_name} \
-                    -v ${cryptos_path}:/cryptos \
+                    -v ${cryptos_path}:/crypto-config \
                     -e FABRIC_CFG_PATH=/ \
-                    hyperledger/fabric-tools:$FABRIC_VERSION \
+                    hyperledger/fabric-tools:$FABRIC_TAG \
                     bash -c " \
-                        configtxgen -profile OneOrgChannel -outputCreateChannelTx /channels/${channel_name}/${channel_name}_tx.pb -channelID $channel_name /configtx.yaml;
+                        configtxgen -profile $channel_profile -outputCreateChannelTx /channels/${channel_name}/${channel_name}_tx.pb -channelID $channel_name /configtx.yaml;
                         configtxgen -inspectChannelCreateTx /channels/${channel_name}/${channel_name}_tx.pb
                     "
 	if [ "$?" -ne 0 ]; then
-		colorEcho "Failed to generate channel configuration transaction..." 131
+		echoc "Failed to generate channel configuration transaction..." light red
 		exit 1
 	fi
 
 	# generate anchor peer transaction
 	docker run --rm -v ${config_path}/configtx.yaml:/configtx.yaml \
                     -v ${channel_dir}:/channels/${channel_name} \
-                    -v ${cryptos_path}:/cryptos \
+                    -v ${cryptos_path}:/crypto-config \
                     -e FABRIC_CFG_PATH=/ \
-                    hyperledger/fabric-tools:$FABRIC_VERSION \
-                    configtxgen -profile OneOrgChannel -outputAnchorPeersUpdate /channels/${channel_name}/${org_msp}_anchors_tx.pb -channelID $channel_name -asOrg $org_msp /configtx.yaml
+                    hyperledger/fabric-tools:$FABRIC_TAG \
+                    configtxgen -profile $channel_profile -outputAnchorPeersUpdate /channels/${channel_name}/${org_msp}_anchors_tx.pb -channelID $channel_name -asOrg $org_msp /configtx.yaml
 	if [ "$?" -ne 0 ]; then
-		colorEcho "Failed to generate anchor peer update for $org_msp..." 131
+		echoc "Failed to generate anchor peer update for $org_msp..." light red
 		exit 1
 	fi
 }
@@ -611,11 +700,11 @@ generate_channeltx() {
 # $2: certificates output directory
 generate_cryptos() {
     if [ -z "$1" ]; then
-		colorEcho "Config path missing" 131
+		echoc "Config path missing" light red
 		exit 1
 	fi
     if [ -z "$2" ]; then
-		colorEcho "Cryptos path missing" 131
+		echoc "Cryptos path missing" light red
 		exit 1
 	fi
 
@@ -627,13 +716,17 @@ generate_cryptos() {
     fi
     mkdir -p $cryptos_path
 
+    echoc "Generating cryptos" light cyan
+	echoc "Config path: $config_path" light green
+	echoc "Cryptos path: $cryptos_path" light green
+
 	# generate crypto material
 	docker run --rm -v ${config_path}/crypto-config.yaml:/crypto-config.yaml \
-                    -v ${cryptos_path}:/cryptos \
-                    hyperledger/fabric-tools:$FABRIC_VERSION \
-                    cryptogen generate --config=/crypto-config.yaml --output=/cryptos
+                    -v ${cryptos_path}:/crypto-config \
+                    hyperledger/fabric-tools:$FABRIC_TAG \
+                    cryptogen generate --config=/crypto-config.yaml --output=/crypto-config
 	if [ "$?" -ne 0 ]; then
-		colorEcho "Failed to generate crypto material..." 131
+		echoc "Failed to generate crypto material..." light red
 		exit 1
 	fi
 }
@@ -648,11 +741,11 @@ shift
 if [ "$func" == "dep" ]; then
     checkDependencies
 elif [ "$func" == "start" ]; then
-    if [ "$1" = "--experimental" ] || [ "$1" = "-e" ]; then
+    if [ "$1" = "local" ] || [ "$1" = "-l" ]; then
         shift
-        startNetworkOfficialCharts
-    else
         startNetworkLocalCharts
+    else
+        startNetworkOfficialCharts
     fi
 elif [ "$func" == "clean" ]; then
     cleanEnvironment

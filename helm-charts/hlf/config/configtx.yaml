@@ -64,7 +64,6 @@ Organizations:
                 Type: Signature
                 Rule: "OR('Org1MSP.peer')"
 
-        # leave this flag set to true.
         AnchorPeers:
             # AnchorPeers defines the location of peers which can be used
             # for cross org gossip communication.  Note, this value is only

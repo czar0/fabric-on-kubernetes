@@ -15,13 +15,43 @@ Obtain a Kubernetes cluster and set `KUBECONFIG` to point to it.
 helm init
 ```
 
-### Deploy the Charts
+Currently there are two available configurations to deploy helm charts:
+- Official and stable helm charts
+- 
 
-Deploy all of the charts by running the following commands:
+### Official and stable helm charts
+Deploy all the official charts by running the following commands:
 
 ```bash
 ./deploy_charts.sh start
 ```
+[hlf-peer](https://github.com/helm/charts/tree/master/stable/hlf-peer)
+
+[hlf-couchdb](https://github.com/helm/charts/tree/master/stable/hlf-couchdb)
+
+[hlf-ca](https://github.com/helm/charts/tree/master/stable/hlf-ca)
+
+[hlf-ord](https://github.com/helm/charts/tree/master/stable/hlf-ord)
+
+### Local charts
+Deploy all the local charts by running the following commands:
+
+```bash
+./deploy_charts.sh start local
+```
+#### Deploying the Charts Manually
+
+Use the following instructions to deploy each chart manually.
+
+* Deploy the blockchain network chart by running the following commands:
+
+  ```bash
+  cd ./blockchain
+  helm install --name blockchain .
+  ```
+
+> **Note:** Give the charts time to install before moving on to the next chart.
+
 
 ### Clean the environment
 
@@ -31,19 +61,8 @@ Clean up the environment by running the following commands:
 ./deploy_charts.sh clean
 ```
 
-## Deploying the Charts Manually
 
-Use the following instructions to deploy each chart manually.
-
- > **Note:** Give the charts time to install before moving on to the next chart.
- >
- >Use the command `kubectl get pods -a` to check on the status of the containers and ensure that none complete with an `Error` status.  
- >
- >Additional information can be obtained for a pod by using the command `kubectl logs <pod_name>`.
-
-* Deploy the blockchain network chart by running the following commands:
-
-  ```bash
-  cd ./blockchain
-  helm install --name blockchain .
-  ```
+## Additional information
+>Use the command `kubectl --namespace <namespace> get pods -a` to check on the status of the containers and ensure that none complete with an `Error` status.  
+>
+>Additional information can be obtained for a pod by using the command `kubectl --namespace <namespace> logs <pod_name>`.

@@ -17,7 +17,6 @@ helm init
 
 Currently there are two available configurations to deploy helm charts:
 - Official and stable helm charts
-- 
 
 ### Official and stable helm charts
 Deploy all the official charts by running the following commands:
@@ -25,6 +24,7 @@ Deploy all the official charts by running the following commands:
 ```bash
 ./deploy_charts.sh start
 ```
+
 [hlf-peer](https://github.com/helm/charts/tree/master/stable/hlf-peer)
 
 [hlf-couchdb](https://github.com/helm/charts/tree/master/stable/hlf-couchdb)
@@ -45,10 +45,10 @@ Use the following instructions to deploy each chart manually.
 
 * Deploy the blockchain network chart by running the following commands:
 
-  ```bash
-  cd ./blockchain
-  helm install --name blockchain .
-  ```
+```bash
+cd ./blockchain
+helm install --name blockchain .
+```
 
 > **Note:** Give the charts time to install before moving on to the next chart.
 

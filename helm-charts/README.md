@@ -58,7 +58,7 @@ Use the following instructions to deploy each chart manually.
 Clean up the environment by running the following commands:
 
 ```bash
-./deploy_charts.sh clean
+./deploy_charts.sh clean <namespace>
 ```
 
 

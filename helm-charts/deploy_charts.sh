@@ -1,16 +1,5 @@
 #!/bin/bash
 
-#
-# deploy_charts.sh: Deploys the Helm Charts required to create an IBM Blockchain Platform
-#                   development sandbox using IBM Container Service.
-#
-# Contributors:     Eddie Allen
-#                   Mihir Shah
-#                   Dhyey Shah
-#
-# Version:          7 December 2017
-#
-
 KUBECONFIG_FOLDER=$PWD/../dev/kube-configs
 CONFIG_PATH=$PWD/../sampleconfig
 FABRIC_VERSION=1.4
@@ -34,27 +23,22 @@ FABRIC_VERSION=1.4
 #                   [0|1]30, [dark|light] black
 #                   [0|1]31, [dark|light] red
 #                   [0|1]32, [dark|light] green
-#                   [0|1]33, [dark|light] brown
+#                   [0|1]33, [dark|light] yellow
 #                   [0|1]34, [dark|light] blue
 #                   [0|1]35, [dark|light] purple
 #                   [0|1]36, [dark|light] cyan
 #
- echoc() {
-    # Check for proper usage
+echoc() {
     if [[ ${#} != 3 ]]; then
-        echo "usage: ${FUNCNAME} <string> [light|dark] [black|red|green|brown|blue|pruple|cyan]"
+        echo "usage: ${FUNCNAME} <string> [light|dark] [black|red|green|yellow|blue|pruple|cyan]"
         exit 1
     fi
 
     local message=${1}
 
     case $2 in
-        dark )
-            intensity=0
-            ;;
-        light )
-            intensity=1
-            ;;
+        dark) intensity=0 ;;
+        light) intensity=1 ;;
     esac
 
     if [[ -z $intensity ]]; then
@@ -63,27 +47,13 @@ FABRIC_VERSION=1.4
     fi
 
     case $3 in 
-        black )
-            colour_code=${intensity}30
-            ;;
-        red )
-            colour_code=${intensity}31
-            ;;
-        green )
-            colour_code=${intensity}32
-            ;;
-        brown )
-            colour_code=${intensity}33
-            ;;
-        blue )
-            colour_code=${intensity}34
-            ;;
-        purple )
-            colour_code=${intensity}35
-            ;;
-        cyan )
-            colour_code=${intensity}36
-            ;;
+        black) colour_code=${intensity}30 ;;
+        red) colour_code=${intensity}31 ;;
+        green) colour_code=${intensity}32 ;;
+        yellow) colour_code=${intensity}33 ;;
+        blue) colour_code=${intensity}34 ;;
+        purple) colour_code=${intensity}35 ;;
+        cyan) colour_code=${intensity}36 ;;
     esac
         
     if [[ -z $colour_code ]]; then
@@ -94,7 +64,7 @@ FABRIC_VERSION=1.4
     colour_code=${colour_code:1}
 
     # Print out the message
-    echo -e -n "${message}" | awk '{print "\033['${intensity}';'${colour_code}'m" $0 "\033[1;0m"}'
+    echo "${message}" | awk '{print "\033['${intensity}';'${colour_code}'m" $0 "\033[1;0m"}'
 }
 
 #
@@ -112,8 +82,8 @@ FABRIC_VERSION=1.4
     fi
 
     # Wipe the /shared persistent volume if it exists (it should be removed with chart removal)
-    # kubectl delete pv,pvc --all
-    kubectl delete -n blockchain pv,pvc,secret --all
+    namespace=${1:-blockchain}
+    kubectl delete --namespace $namespace pv,pvc,secret --all
 
     echo "Checking if all deployments are deleted"
 
@@ -259,6 +229,9 @@ startNetworkOfficialCharts() {
     export cryptos_path="${base_path}/cryptos"
     export hlf_version="1.4"
     export thirdparty_version="0.4.14"
+    export chaincode_path="${base_path}/chaincode"
+    export chaincode_name="mychaincode"
+
 
     if [ -d "$cryptos_path" ]; then
         rm -rf $cryptos_path
@@ -313,15 +286,14 @@ startNetworkOfficialCharts() {
     generate_genesis $base_path ${base_path}/config $cryptos_path OneOrgOrdererGenesis
     generate_channeltx $channel_name $base_path ${base_path}/config $cryptos_path OneOrgOrdererGenesis OneOrgChannel Org1MSP
 
-    kubectl create secret generic --namespace $namespace hlf--${channel_name}-genesis --from-file=genesis.block=${base_path}/channels/$channel_name/genesis_block.pb
-    kubectl create secret generic --namespace $namespace hlf--${channel_name}-channel --from-file=${base_path}/channels/$channel_name/${channel_name}_tx.pb
-    kubectl create secret generic --namespace $namespace hlf--${channel_name}-org1anchors --from-file=${base_path}/channels/$channel_name/${org_msp}_anchors_tx.pb
+    kubectl create secret generic --namespace $namespace hlf--${channel_name}-genesis --from-file=genesis.block=${base_path}/channels/orderer-system-channel/genesis_block.pb
+    kubectl create secret generic --namespace $namespace hlf--${channel_name}-channel --from-file=${base_path}/channels/$channel_name/${channel_name}_tx.pb --from-file=${base_path}/channels/$channel_name/${org_msp}_anchors_tx.pb
 
     echoc "Create and set up Orderer" light blue
-    helm install stable/hlf-ord --namespace $namespace --name $orderer_name --set image.tag=${hlf_version},service.port=${orderer_port},ord.mspID=${orderer_msp},ord.type=${orderer_type},secrets.ord.cert=hlf--${orderer_name}-idcert,secrets.ord.key=hlf--${orderer_name}-idkey,secrets.ord.caCert=hlf--ca-cert,secrets.genesis=hlf--${channel_name}-genesis,secrets.adminCert=hlf--${orderer_name}-admincert
+    helm install ./hlf/charts/hlf-ord --namespace $namespace --name $orderer_name --set image.tag=${hlf_version},service.port=${orderer_port},ord.mspID=${orderer_msp},ord.type=${orderer_type},secrets.ord.cert=hlf--${orderer_name}-idcert,secrets.ord.key=hlf--${orderer_name}-idkey,secrets.ord.caCert=hlf--ca-cert,secrets.genesis=hlf--${channel_name}-genesis,secrets.adminCert=hlf--${orderer_name}-admincert
 
     echoc "Create and set up Peer" light blue
-    helm install stable/hlf-peer --namespace $namespace --name $peer_name --set image.tag=${hlf_version},peer.couchdbInstance=cdb-${peer_name},peer.mspID=${peer_msp},service.portRequest=${peer_port},secrets.peer.cert=hlf--${peer_name}-idcert,secrets.peer.key=hlf--${peer_name}-idkey,secrets.peer.caCert=hlf--ca-cert,secrets.channel=hlf--${channel_name}-channel,secrets.adminCert=hlf--${org}-admincert,secrets.adminKey=hlf--${org}-adminkey
+    helm install ./hlf/charts/hlf-peer --namespace $namespace --name $peer_name --set image.tag=${hlf_version},peer.couchdbInstance=cdb-${peer_name},peer.mspID=${peer_msp},service.portRequest=${peer_port},secrets.peer.cert=hlf--${peer_name}-idcert,secrets.peer.key=hlf--${peer_name}-idkey,secrets.peer.caCert=hlf--ca-cert,secrets.channel=hlf--${channel_name}-channel,secrets.adminCert=hlf--${org}-admincert,secrets.adminKey=hlf--${org}-adminkey,peer.gossip.bootstrap=${peer_name}-hlf-peer:${peer_port},peer.gossip.externalEndpoint=${peer_name}-hlf-peer:${peer_port}
 
     orderer_pod=$(kubectl get pods --namespace $namespace -l "app=hlf-ord,release=${orderer_name}" -o jsonpath="{.items[0].metadata.name}")
     status=$(kubectl describe pod --namespace $namespace -l "app=hlf-ord,release=${orderer_name}" | grep -m2 "Ready" | head -n1 |  awk '{print $2}')
@@ -356,8 +328,37 @@ startNetworkOfficialCharts() {
     echoc "Join channel" light blue
     kubectl exec --namespace $namespace $peer_pod -- bash -c "CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel join -b /${channel_name}.block"
 
-    # echoc "Update channel with anchor peers" light blue
-    # kubectl exec --namespace $namespace $peer_pod -- bash -c "CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel update -o -o ${orderer_name}-hlf-ord:${orderer_port} -c $channel_name -f /hl_config/channel/${org_msp}_anchors_tx.pb"
+    echoc "Update channel with anchor peers" light blue
+    kubectl exec --namespace $namespace $peer_pod -- bash -c "CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel update -o ${orderer_name}-hlf-ord:${orderer_port} -c $channel_name -f /hl_config/channel/${org_msp}_anchors_tx.pb"
+
+    helm install ./hlf/charts/hlf-tools --namespace $namespace --name cli --set image.tag=${hlf_version},peer.host=${peer_name}-hlf-peer,peer.port=${peer_port},peer.mspID=${org_msp},secrets.peer.cert=hlf--${peer_name}-idcert,secrets.peer.key=hlf--${peer_name}-idkey,secrets.peer.caCert=hlf--ca-cert,secrets.channel=hlf--${channel_name}-channel,secrets.adminCert=hlf--${org}-admincert,secrets.adminKey=hlf--${org}-adminkey
+
+    cli_name=cli
+
+    cli_pod=$(kubectl get pods --namespace $namespace -l "app=hlf-tools,release=${cli_name}" -o jsonpath="{.items[0].metadata.name}")
+    status=$(kubectl describe pod --namespace $namespace -l "app=hlf-tools,release=${cli_name}" | grep -m2 "Ready" | head -n1 |  awk '{print $2}')
+    while [ "${status}" != "True" ]; do
+        echoc "Waiting for ${cli_name} to start. Status = ${status}" light purple
+        sleep 5
+        if [ "${status}" == "Error" ]; then
+            echoc "There is an error in ${cli_name}. Please run 'kubectl logs ${cli_name}' or 'kubectl describe pod ${cli_name}'." light red
+            exit 1
+        fi
+        status=$(kubectl describe pod --namespace $namespace -l "app=hlf-tools,release=${cli_name}" | grep -m2 "Ready" | head -n1 |  awk '{print $2}')
+    done
+
+    echo "Copying chaincode codebase into peer container"
+    kubectl exec --namespace $namespace $cli_pod -- bash -c "mkdir -p /opt/gopath/src"
+    kubectl cp --namespace $namespace $chaincode_path ${cli_pod}:/opt/gopath/src/chaincode 1>/dev/null
+
+    echoc "Install default chaincode" light blue
+    kubectl exec --namespace $namespace $cli_pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=${peer_name}-hlf-peer:${peer_port} peer chaincode install -n $chaincode_name -v 1.0 -p chaincode/${chaincode_name}"
+    
+    echoc "Instantiate default chaincode" light blue
+    kubectl exec --namespace $namespace $cli_pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=${peer_name}-hlf-peer:${peer_port} peer chaincode instantiate -n $chaincode_name -v 1.0 -C ${channel_name} -c '{\"Args\":[]}'"
+    
+    echoc "Test invoke" light blue
+    kubectl exec --namespace $namespace $cli_pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=${peer_name}-hlf-peer:${peer_port} peer chaincode invoke -o ${orderer_name}-hlf-ord:${orderer_port} -C $channel_name -n $chaincode_name -c '{\"Args\":[\"put\",\"a\",\"10\"]}'"
 }
 
 create_ca() {
@@ -365,14 +366,14 @@ create_ca() {
     echoc "==== Certificate Authority ====" light blue
     echoc "===============================" light blue
 
-    ca_port="7054"
+    ca_port="30054"
 
     read -p "CA name [ca]: " ca_name
     export ca_name=${ca_name:-ca}
     echoc $ca_name light green
 
     echoc "Create and set up CA" light blue
-    helm install stable/hlf-ca --namespace $namespace --name $ca_name --set image.tag=${hlf_version},config.hlfToolsVersion=${hlf_version},service.port=${ca_port},caName=${ca_name},postgresql.enabled=true
+    helm install ./hlf/charts/hlf-ca --namespace $namespace --name $ca_name --set image.tag=${hlf_version},config.hlfToolsVersion=${hlf_version},service.port=${ca_port},caName=${ca_name},postgresql.enabled=true
 
     ca_pod=$(kubectl get pods --namespace $namespace -l "app=hlf-ca,release=${ca_name}" -o jsonpath="{.items[0].metadata.name}")
     status=$(kubectl describe pod --namespace $namespace -l "app=hlf-ca,release=${ca_name}" | grep -m2 "Ready" | tail -n1 |  awk '{print $2}')
@@ -504,7 +505,7 @@ create_peer() {
 
     read -p "Peer secret [org1peer1_pw]: " peer_secret
     peer_secret=${peer_secret:-org1peer1_pw}
-    echoc $peer_secret
+    echoc $peer_secret light green
 
     export peer_msp="Org1MSP"
     export peer_port="7051"
@@ -513,7 +514,7 @@ create_peer() {
     kubectl exec --namespace $namespace $ca_pod -- fabric-ca-client register --id.name $peer_name --id.secret $peer_secret --id.type peer
 
     echoc "Enroll $peer_name" light blue
-    kubectl exec --namespace $namespace $ca_pod -- fabric-ca-client enroll -d -u http://${peer_name}:${peer_secret}@$SERVICE_DNS:${ca_port} -M ${peer_msp}_${peer_name}
+    kubectl exec --namespace $namespace $ca_pod -- fabric-ca-client enroll -d -u http://${peer_name}:${peer_secret}@$SERVICE_DNS:7054 -M ${peer_msp}_${peer_name}
 
     echoc "Store $admin_name identity in msp/admincerts" light blue
     kubectl exec --namespace $namespace $ca_pod -- fabric-ca-client certificate list --id $peer_name --store msp/admincerts
@@ -558,6 +559,7 @@ create_peer() {
 # $1: base path
 # $2: config path
 # $3: cryptos directory
+# $4: network profile name
 generate_genesis() {
     if [ -z "$1" ]; then
 		echoc "Base path missing" light red
@@ -569,6 +571,10 @@ generate_genesis() {
 	fi
     if [ -z "$3" ]; then
 		echoc "Crypto material path missing" light red
+		exit 1
+	fi
+    if [ -z "$4" ]; then
+		echoc "Network profile name" light red
 		exit 1
 	fi
 
@@ -594,7 +600,7 @@ generate_genesis() {
                     -v ${channel_dir}:/channels/orderer-system-channel \
                     -v ${cryptos_path}:/crypto-config \
                     -e FABRIC_CFG_PATH=/ \
-                    hyperledger/fabric-tools:$FABRIC_TAG \
+                    hyperledger/fabric-tools:$FABRIC_VERSION \
                     bash -c " \
                         configtxgen -profile $network_profile -channelID orderer-system-channel -outputBlock /channels/orderer-system-channel/genesis_block.pb /configtx.yaml;
                         configtxgen -inspectBlock /channels/orderer-system-channel/genesis_block.pb
@@ -672,7 +678,7 @@ generate_channeltx() {
                     -v ${channel_dir}:/channels/${channel_name} \
                     -v ${cryptos_path}:/crypto-config \
                     -e FABRIC_CFG_PATH=/ \
-                    hyperledger/fabric-tools:$FABRIC_TAG \
+                    hyperledger/fabric-tools:$FABRIC_VERSION \
                     bash -c " \
                         configtxgen -profile $channel_profile -outputCreateChannelTx /channels/${channel_name}/${channel_name}_tx.pb -channelID $channel_name /configtx.yaml;
                         configtxgen -inspectChannelCreateTx /channels/${channel_name}/${channel_name}_tx.pb
@@ -687,7 +693,7 @@ generate_channeltx() {
                     -v ${channel_dir}:/channels/${channel_name} \
                     -v ${cryptos_path}:/crypto-config \
                     -e FABRIC_CFG_PATH=/ \
-                    hyperledger/fabric-tools:$FABRIC_TAG \
+                    hyperledger/fabric-tools:$FABRIC_VERSION \
                     configtxgen -profile $channel_profile -outputAnchorPeersUpdate /channels/${channel_name}/${org_msp}_anchors_tx.pb -channelID $channel_name -asOrg $org_msp /configtx.yaml
 	if [ "$?" -ne 0 ]; then
 		echoc "Failed to generate anchor peer update for $org_msp..." light red
@@ -723,7 +729,7 @@ generate_cryptos() {
 	# generate crypto material
 	docker run --rm -v ${config_path}/crypto-config.yaml:/crypto-config.yaml \
                     -v ${cryptos_path}:/crypto-config \
-                    hyperledger/fabric-tools:$FABRIC_TAG \
+                    hyperledger/fabric-tools:$FABRIC_VERSION \
                     cryptogen generate --config=/crypto-config.yaml --output=/crypto-config
 	if [ "$?" -ne 0 ]; then
 		echoc "Failed to generate crypto material..." light red
@@ -738,9 +744,9 @@ printHelp () {
 readonly func="$1"
 shift
 
-if [ "$func" == "dep" ]; then
-    checkDependencies
-elif [ "$func" == "start" ]; then
+checkDependencies
+
+if [ "$func" == "start" ]; then
     if [ "$1" = "local" ] || [ "$1" = "-l" ]; then
         shift
         startNetworkLocalCharts
@@ -748,7 +754,7 @@ elif [ "$func" == "start" ]; then
         startNetworkOfficialCharts
     fi
 elif [ "$func" == "clean" ]; then
-    cleanEnvironment
+    cleanEnvironment $@
 else
     printHelp
     exit 1

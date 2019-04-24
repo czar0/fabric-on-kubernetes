@@ -1,0 +1,16 @@
+apiVersion: v1
+description: Hyperledger Fabric Tools chart (these charts are created by Everledger.io and are currently not directly associated with the Hyperledger project)
+name: hlf-tools
+version: 1.0.0
+appVersion: 1.4
+keywords:
+  - blockchain
+  - hyperledger
+  - fabric
+home: http://hyperledger-fabric.readthedocs.io
+sources:
+  - https://github.com/hyperledger/fabric
+maintainers:
+  - name: cesarevalitutto
+    email: cesare@everledger.io
+icon: https://www.hyperledger.org/wp-content/uploads/2018/04/fabric-logo.png

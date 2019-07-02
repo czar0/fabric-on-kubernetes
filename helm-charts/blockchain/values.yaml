@@ -46,5 +46,5 @@ blockchain:
   ordererImage: hyperledger/fabric-orderer:1.4
   caImage: hyperledger/fabric-ca:1.4
   peerImage: hyperledger/fabric-peer:1.4
-  couchdbImage: hyperledger/fabric-couchdb:0.4.14
+  couchdbImage: hyperledger/fabric-couchdb:0.4.15
   pullPolicy: IfNotPresent

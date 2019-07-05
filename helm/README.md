@@ -80,38 +80,93 @@ This example is made for the `Production` extandable configuration, but can be e
     export orderer_address=<full address of the orderer including port>
 
     # e.g.
-    export namespaece=blockchain
+    export namespaece="blockchain"
     export channel_name="mychannel"
     export chaincode_name="mychaincode"
-    export peer_address=org1peer1-hlf-peer:30110
-    export orderer_address=orderer-hlf-ord:31010
+    export peer_address="org1peer1-hlf-peer:30110"
+    export orderer_address="orderer-hlf-ord:31010"
     ```
 
-1. Copy the cloud/remote config, add to a file and export it as `KUBECONFIG` variable
+2. Copy the cloud/remote config, add to a file and export it as `KUBECONFIG` variable
 
     ```bash
     export KUBECONFIG=<rancher configuration file>
     ```
 
-2. Retrieve the CLI container name
+3. Retrieve the CLI container name
 
     ```bash
     cli_pod=$(kubectl get pods --namespace $namespace -l "app=hlf-tools,release=cli" -o jsonpath="{.items[0].metadata.name}")
     ```
 
-3. Run an invoke:
+4. Run an invoke:
 
     ```bash
     kubectl exec --namespace $namespace $cli_pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=$peer_address peer chaincode invoke -o $orderer_address -C $channel_name -n $chaincode_name -c '{\"Args\":[\"put\",\"a\",\"10\"]}'"
     ```
 
-4. Run a query:
+5. Run a query:
 
     ```bash
     kubectl exec --namespace blockchain $cli_pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=$peer_address peer chaincode invoke -o $orderer_adddress -C $channel_name -n $chaincode_name -c '{\"Args\":[\"get\",\"a\"]}'"
     ```
 
 **Note: Chaincode cointainer is hidden, but the log get attached to the peer, so that you can see the output of your commands there.**
+
+### Deploy a new chaincode
+
+1. Set some environment variables before starting
+
+    ```bash
+    export namespaece=<k8s namespace where to set up the network>
+    export channel_name=<channel name id>
+    export chaincode_name=<chaincode name id>
+    export peer_address=<full address of the peer including port>
+    export orderer_address=<full address of the orderer including port>
+    export chaincode_path=<absolute pathname where your chaincode sits>
+    export chaincode_name=<partial pathname where your chaincode sits>
+    export chaincode_version=<initial version of the chaincode to deploy>
+
+    # e.g.
+    export namespaece="blockchain"
+    export channel_name="mychannel"
+    export chaincode_name="mychaincode"
+    export peer_address="org1peer1-hlf-peer:30110"
+    export orderer_address="orderer-hlf-ord:31010"
+    export chaincode_path="/home/me/stuff/go/cc"
+    export chaincode_name="cc"
+    export chaincode_version="1.0"
+    ```
+
+2. Copy the cloud/remote config, add to a file and export it as `KUBECONFIG` variable
+
+    ```bash
+    export KUBECONFIG=<rancher configuration file>
+    ```
+
+3. Copy chaincode codebase into peer container
+
+    ```bash
+    kubectl cp --namespace $namespace $chaincode_path ${cli_pod}:/opt/gopath/src/chaincode/${chaincode_path} 1>/dev/null
+    ```
+
+4. Install chaincode
+
+    ```bash
+    kubectl exec --namespace $namespace $cli_pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=${peer_address} peer chaincode install -n $chaincode_name -v $chaincode_version -p chaincode/${chaincode_name}"
+
+    # e.g.
+    kubectl exec --namespace blockchain hlf-cli-pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=peer0:30110 peer chaincode install -n cc -v 1.0 -p chaincode/cc"
+    ```
+
+5. Instantiate chaincode
+
+    ```bash
+    kubectl exec --namespace $namespace $cli_pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=${peer_address} peer chaincode instantiate -o $orderer_address -n $chaincode_name -v $chaincode_version -C $channel_name -l <language of the chaincode> -c <args in json format> -P <endorsment policy>"
+
+    # e.g.
+    kubectl exec --namespace blockchain hlf-cli-pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=peer0:30110 peer chaincode instantiate -o orderer:31010 -n cc -v 1.0 -C mychannel -l golang -c '{\"Args\":[]}' -P \"OR('Org1MSP.member')\""
+    ```
 
 ## References
 

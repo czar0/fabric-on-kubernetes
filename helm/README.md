@@ -78,101 +78,98 @@ Clean up the environment by running the following commands:
 
 This example is made for the `Production` extandable configuration, but can be easily changed to support the `Staging` one.
 
-1. First, set some environment variables:
+First, set some environment variables:
 
-    ```bash
-    export namespaece=<k8s namespace where to set up the network>
-    export channel_name=<channel name id>
-    export chaincode_name=<chaincode name id>
-    export peer_address=<full address of the peer including port>
-    export orderer_address=<full address of the orderer including port>
-    export chaincode_path=<absolute pathname where your chaincode sits>
-    export chaincode_name=<partial pathname where your chaincode sits>
-    export chaincode_version=<initial version of the chaincode to deploy>
+```bash
+export namespaece=<k8s namespace where to set up the network>
+export channel_name=<channel name id>
+export chaincode_name=<chaincode name id>
+export peer_address=<full address of the peer including port>
+export orderer_address=<full address of the orderer including port>
+export chaincode_path=<absolute pathname where your chaincode sits>
+export chaincode_name=<partial pathname where your chaincode sits>
+export chaincode_version=<initial version of the chaincode to deploy>
+# e.g.
+export namespaece="blockchain"
+export channel_name="mychannel"
+export chaincode_name="mychaincode"
+export peer_address="org1peer1-hlf-peer:30110"
+export orderer_address="orderer-hlf-ord:31010"
+export chaincode_path="/home/me/stuff/go/cc"
+export chaincode_name="cc"
+export chaincode_version="1.0"
+```
 
-    # e.g.
-    export namespaece="blockchain"
-    export channel_name="mychannel"
-    export chaincode_name="mychaincode"
-    export peer_address="org1peer1-hlf-peer:30110"
-    export orderer_address="orderer-hlf-ord:31010"
-    export chaincode_path="/home/me/stuff/go/cc"
-    export chaincode_name="cc"
-    export chaincode_version="1.0"
-    ```
+Copy the cloud/remote config, add to a file and export it as `KUBECONFIG` variable
 
-2. Copy the cloud/remote config, add to a file and export it as `KUBECONFIG` variable
+```bash
+export KUBECONFIG=<rancher configuration file>
+```
 
-    ```bash
-    export KUBECONFIG=<rancher configuration file>
-    ```
+Retrieve the CLI container name
 
-3. Retrieve the CLI container name
-
-    ```bash
-    cli_pod=$(kubectl get pods --namespace $namespace -l "app=hlf-tools,release=cli" -o jsonpath="{.items[0].metadata.name}")
-    ```
+```bash
+cli_pod=$(kubectl get pods --namespace $namespace -l "app=hlf-tools,release=cli" -o jsonpath="{.items[0].metadata.name}")
+```
 
 Now we are ready to start.
 
 ### Create and join channel
 
-1. Generate the new channel configuration
+Generate the new channel configuration
 
-    ```bash
-    ./run.sh generate channeltx $channel_name ${PWD}/hlf ${PWD}/hlf/config ${PWD}/hlf/cryptos OneOrgOrdererGenesis OneOrgChannel Org1MSP
-    ```
+```bash
+./run.sh generate channeltx $channel_name ${PWD}/hlf ${PWD}/hlf/config ${PWD}/hlf/cryptos OneOrgOrdererGenesis OneOrgChannel Org1MSP
+```
 
-2. Retrieve the peer container name
+Retrieve the peer container name
 
-    ```bash
-    peer_name=<name assigned to the peer>
-    peer_pod=$(kubectl get pods --namespace $namespace -l "app=hlf-peer,release=${peer_name}" -o jsonpath="{.items[0].metadata.name}")
-    ```
+```bash
+peer_name=<name assigned to the peer>
+peer_pod=$(kubectl get pods --namespace $namespace -l "app=hlf-peer,release=${peer_name}" -o jsonpath="{.items[0].metadata.name}")
+```
 
-3. Create the channel through the peer
+Create the channel through the peer
 
-    ```bash
-    kubectl exec --namespace $namespace $peer_pod -- bash -c "CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel create -o ${orderer_address} -c $channel_name -f /hl_config/channel/${channel_name}_tx.pb"
-    ```
+```bash
+kubectl exec --namespace $namespace $peer_pod -- bash -c "CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel create -o ${orderer_address} -c $channel_name -f /hl_config/channel/${channel_name}_tx.pb"
+```
 
-4. Fetch the channel block from the orderer
+Fetch the channel block from the orderer
 
-    ```bash
-    kubectl exec --namespace $namespace $peer_pod -- bash -c "CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel fetch config /${channel_name}.block -c $channel_name -o ${orderer_address}"
-    ```
+```bash
+kubectl exec --namespace $namespace $peer_pod -- bash -c "CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel fetch config /${channel_name}.block -c $channel_name -o ${orderer_address}"
+```
 
-5. Join the channel with the peer
+Join the channel with the peer
 
-    ```bash
-    kubectl exec --namespace $namespace $peer_pod -- bash -c "CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel join -b /${channel_name}.block"
-    ```
+```bash
+kubectl exec --namespace $namespace $peer_pod -- bash -c "CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel join -b /${channel_name}.block"
+```
 
 ### Deploy a new chaincode
 
-1. Copy chaincode codebase into peer container
+Copy chaincode codebase into peer container
 
-    ```bash
-    kubectl cp --namespace $namespace $chaincode_path ${cli_pod}:/opt/gopath/src/chaincode/${chaincode_path} 1>/dev/null
-    ```
+```bash
+kubectl cp --namespace $namespace $chaincode_path ${cli_pod}:/opt/gopath/src/chaincode/${chaincode_path} 1>/dev/null
+```
 
-2. Install chaincode
+Install chaincode
 
-    ```bash
-    kubectl exec --namespace $namespace $cli_pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=${peer_address} peer chaincode install -n $chaincode_name -v $chaincode_version -p chaincode/${chaincode_name}"
+```bash
+kubectl exec --namespace $namespace $cli_pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=${peer_address} peer chaincode install -n $chaincode_name -v $chaincode_version -p chaincode/${chaincode_name}"
+# e.g.
+kubectl exec --namespace blockchain hlf-cli-pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=peer0:30110 peer chaincode install -n cc -v 1.0 -p chaincode/cc"
+```
 
-    # e.g.
-    kubectl exec --namespace blockchain hlf-cli-pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=peer0:30110 peer chaincode install -n cc -v 1.0 -p chaincode/cc"
-    ```
+Instantiate chaincode
 
-3. Instantiate chaincode
-
-    ```bash
-    kubectl exec --namespace $namespace $cli_pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=${peer_address} peer chaincode instantiate -o $orderer_address -n $chaincode_name -v $chaincode_version -C $channel_name -l <language of the chaincode> -c <args in json format> -P <endorsment policy>"
-
-    # e.g.
-    kubectl exec --namespace blockchain hlf-cli-pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=peer0:30110 peer chaincode instantiate -o orderer:31010 -n cc -v 1.0 -C mychannel -l golang -c '{\"Args\":[]}' -P \"OR('Org1MSP.member')\""
-    ```
+```bash
+kubectl exec --namespace $namespace $cli_pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=${peer_address} peer chaincode instantiate -o $orderer_address -n $chaincode_name -v $chaincode_version -C $channel_name -l <language of the chaincode> -c <args in json format> -P <endorsment policy>"
+# e.g.
+kubectl exec --namespace blockchain hlf-cli-pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=peer0:30110 peer chaincode instantiate -o orderer:31010 -n cc -v 1.0 -C mychannel -l golang -c '{\"Args\":[]}' -P \"OR('Org1MSP.member')\""
+```
 
 ### Run an invoke
 
@@ -201,19 +198,19 @@ export THIRDPARTY_VERSION="0.4.15"
 
 Updating the charts without resetting username and password:
 
-1. Copy and export in environment variables `CA_ADMIN` and `CA_PASSWORD` and log them to be sure the command did work
+Copy and export in environment variables `CA_ADMIN` and `CA_PASSWORD` and log them to be sure the command did work
 
-    ```bash
-    export CA_ADMIN=$(kubectl get secret --namespace blockchain ca-hlf-ca--ca -o jsonpath="{.data.CA_ADMIN}" | base64 --decode; echo)
-    export CA_PASSWORD=$(kubectl get secret --namespace blockchain ca-hlf-ca--ca -o jsonpath="{.data.CA_PASSWORD}" | base64 --decode; echo)
-    echo $CA_ADMIN $CA_PASSWORD
-    ```
+```bash
+export CA_ADMIN=$(kubectl get secret --namespace blockchain ca-hlf-ca--ca -o jsonpath="{.data.CA_ADMIN}" | base64 --decode; echo)
+export CA_PASSWORD=$(kubectl get secret --namespace blockchain ca-hlf-ca--ca -o jsonpath="{.data.CA_PASSWORD}" | base64 --decode; echo)
+echo $CA_ADMIN $CA_PASSWORD
+```
 
-2. Upgrade the chart
+Upgrade the chart
 
-    ```bash
-    helm upgrade --namespace $namespace --tiller-namespace $namespace --reuse-values --set image.tag=$FABRIC_VERSION,config.hlfToolsVersion=$FABRIC_VERSION,postgresql.enabled=true,adminUsername=$CA_ADMIN,adminPassword=$CA_PASSWORD ca ./hlf/charts/hlf-ca
-    ```
+```bash
+helm upgrade --namespace $namespace --tiller-namespace $namespace --reuse-values --set image.tag=$FABRIC_VERSION,config.hlfToolsVersion=$FABRIC_VERSION,postgresql.enabled=true,adminUsername=$CA_ADMIN,adminPassword=$CA_PASSWORD ca ./hlf/charts/hlf-ca
+```
 
 ### Orderer
 
@@ -225,18 +222,18 @@ helm upgrade  --namespace $namespace --tiller-namespace $namespace --reuse-value
 
 ### CouchDB
 
-1. Copy and export CouchDB username and password
+Copy and export CouchDB username and password
 
-    ```bash
-    export COUCHDB_USERNAME=$(kubectl get secret --namespace blockchain cdb-org1peer1-hlf-couchdb -o jsonpath="{.data.COUCHDB_USERNAME}" | base64 --decode; echo)
-    export COUCHDB_PASSWORD=$(kubectl get secret --namespace blockchain cdb-org1peer1-hlf-couchdb -o jsonpath="{.data.COUCHDB_PASSWORD}" | base64 --decode; echo)
-    ```
+```bash
+export COUCHDB_USERNAME=$(kubectl get secret --namespace blockchain cdb-org1peer1-hlf-couchdb -o jsonpath="{.data.COUCHDB_USERNAME}" | base64 --decode; echo)
+export COUCHDB_PASSWORD=$(kubectl get secret --namespace blockchain cdb-org1peer1-hlf-couchdb -o jsonpath="{.data.COUCHDB_PASSWORD}" | base64 --decode; echo)
+```
 
-2. Update the chart without resetting the password (requires running step 2):
+Update the chart without resetting the password (requires running step 2):
 
-    ```bash
-    helm upgrade --namespace $namespace --tiller-namespace $namespace --reuse-values --set couchdbUsername=$COUCHDB_USERNAME,couchdbPassword=$COUCHDB_PASSWORD cdb-org1peer1 ./hlf/hlf-couchdb
-    ```
+```bash
+helm upgrade --namespace $namespace --tiller-namespace $namespace --reuse-values --set couchdbUsername=$COUCHDB_USERNAME,couchdbPassword=$COUCHDB_PASSWORD cdb-org1peer1 ./hlf/hlf-couchdb
+```
 
 ### Peer
 

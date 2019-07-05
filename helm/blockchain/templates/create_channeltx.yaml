@@ -1,0 +1,40 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: createchanneltx
+  labels:
+    app: {{ template "blockchain.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  restartPolicy: "Never"
+  volumes:
+  - name: {{ template "blockchain-shared-pvc.name" . }}
+    persistentVolumeClaim:
+      claimName: {{ template "blockchain-shared-pvc.name" . }}
+  containers:
+  - name: createchanneltx
+    image: {{ .Values.blockchain.toolsImage }}
+    imagePullPolicy: {{ .Values.blockchain.pullPolicy }}
+    command: 
+    - sh
+    - -c
+    - |
+      while [ ! -f /shared/bootstrapped ]; do
+        echo Waiting for bootstrapped
+        sleep 1
+      done
+      
+      cd /shared && pwd && ls && 
+      configtxgen -profile TwoOrgsChannel -outputCreateChannelTx mychannel.tx -channelID mychannel &&
+      touch /shared/status_channeltx_complete
+    env:
+    - name: FABRIC_CFG_PATH
+      value: /shared
+    - name: GODEBUG
+      value: "netdns=go"
+    volumeMounts:
+    - mountPath: /shared
+      name:  {{ template "blockchain-shared-pvc.name" . }}

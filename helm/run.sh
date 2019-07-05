@@ -265,7 +265,7 @@ simple_setup() {
 interactive_setup() {
     export base_path="${PWD}/hlf"
     export cryptos_path="${base_path}/cryptos"
-    export chaincode_path="../../${base_path}/chaincode"
+    export chaincode_path="${base_path}/../../chaincode"
     export chaincode_name="mychaincode"
 
 
@@ -305,12 +305,13 @@ interactive_setup() {
     export namespace=${namespace:-blockchain}
     echoc $namespace light green
 
+    # It is not always working. It depends on the permissions assigned to the user. Leave it manual for now.
     # kubectl create namespace $namespace
 
-    # helm init --tiller-namespace $namespace --upgrade
+    helm init --tiller-namespace $namespace --upgrade
 
-    # echoc "Waiting for tiller container to be up and running..." light blue
-    # sleep 10
+    echoc "Waiting for tiller container to be up and running..." light blue
+    sleep 10
 
     create_ca
 
@@ -408,7 +409,7 @@ interactive_setup() {
 
     echo "Copying chaincode codebase into peer container"
     kubectl exec --namespace $namespace $cli_pod -- bash -c "mkdir -p /opt/gopath/src"
-    kubectl cp --namespace $namespace $chaincode_path ${cli_pod}:/opt/gopath/src/chaincode 1>/dev/null
+    kubectl cp --namespace $namespace $chaincode_path ${cli_pod}:/opt/gopath/src/chaincode
 
     echoc "Install default chaincode" light blue
     kubectl exec --namespace $namespace $cli_pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=${peer_name}-hlf-peer:${peer_port} peer chaincode install -n $chaincode_name -v 1.0 -p chaincode/${chaincode_name}"
@@ -632,19 +633,19 @@ create_couchdb() {
 # $4: network profile name
 generate_genesis() {
     if [ -z "$1" ]; then
-		echoc "Base path missing" light red
+		echoc "Base path missing" dark red
 		exit 1
 	fi
     if [ -z "$2" ]; then
-		echoc "Config path missing" light red
+		echoc "Config path missing" dark red
 		exit 1
 	fi
     if [ -z "$3" ]; then
-		echoc "Crypto material path missing" light red
+		echoc "Crypto material path missing" dark red
 		exit 1
 	fi
     if [ -z "$4" ]; then
-		echoc "Network profile name" light red
+		echoc "Network profile name" dark red
 		exit 1
 	fi
 
@@ -654,29 +655,38 @@ generate_genesis() {
     local cryptos_path="$3"
     local network_profile="$4"
 
-    echoc "Generating genesis block" light cyan
-	echoc "Base path: $base_path" light green
-	echoc "Config path: $config_path" light green
-	echoc "Cryptos path: $cryptos_path" light green
-	echoc "Network profile: $network_profile" light green
-
     if [ -d "$channel_dir" ]; then
+        echoc "Channel directory ${channel_dir} already exists" light yellow
+		read -p "Do you wish to re-generate channel config? [yes/no] " yn
+		case $yn in
+			[YyEeSs]* ) ;;
+			* ) return 0
+    	esac
         rm -rf $channel_dir
+        mkdir -p $channel_dir
     fi
-    mkdir -p $channel_dir
+
+    echoc "========================" dark cyan
+    echoc "Generating genesis block" dark cyan
+    echoc "========================" dark cyan
+    echo
+	echoc "Base path: $base_path" light cyan
+	echoc "Config path: $config_path" light cyan
+	echoc "Cryptos path: $cryptos_path" light cyan
+	echoc "Network profile: $network_profile" light cyan
 
     # generate genesis block for orderer
 	docker run --rm -v ${config_path}/configtx.yaml:/configtx.yaml \
                     -v ${channel_dir}:/channels/orderer-system-channel \
                     -v ${cryptos_path}:/crypto-config \
                     -e FABRIC_CFG_PATH=/ \
-                    hyperledger/fabric-tools:$FABRIC_VERSION \
+                    hyperledger/fabric-tools:${FABRIC_VERSION} \
                     bash -c " \
                         configtxgen -profile $network_profile -channelID orderer-system-channel -outputBlock /channels/orderer-system-channel/genesis_block.pb /configtx.yaml;
                         configtxgen -inspectBlock /channels/orderer-system-channel/genesis_block.pb
                     "
 	if [ "$?" -ne 0 ]; then
-		echoc "Failed to generate orderer genesis block..." light red
+		echoc "Failed to generate orderer genesis block..." dark red
 		exit 1
 	fi
 }
@@ -691,31 +701,31 @@ generate_genesis() {
 # $7: org msp
 generate_channeltx() {
     if [ -z "$1" ]; then
-		echoc "Channel name missing" light red
+		echoc "Channel name missing" dark red
 		exit 1
 	fi
     if [ -z "$2" ]; then
-		echoc "Base path missing" light red
+		echoc "Base path missing" dark red
 		exit 1
 	fi
     if [ -z "$3" ]; then
-		echoc "Config path missing" light red
+		echoc "Config path missing" dark red
 		exit 1
 	fi
     if [ -z "$4" ]; then
-		echoc "Crypto material path missing" light red
+		echoc "Crypto material path missing" dark red
 		exit 1
 	fi
     if [ -z "$5" ]; then
-		echoc "Network profile missing" light red
+		echoc "Network profile missing" dark red
 		exit 1
 	fi
     if [ -z "$6" ]; then
-		echoc "Channel profile missing" light red
+		echoc "Channel profile missing" dark red
 		exit 1
 	fi
     if [ -z "$7" ]; then
-		echoc "MSP missing" light red
+		echoc "MSP missing" dark red
 		exit 1
 	fi
 
@@ -729,32 +739,41 @@ generate_channeltx() {
     local org_msp="$7"
 
     if [ -d "$channel_dir" ]; then
+        echoc "Channel directory ${channel_dir} already exists" light yellow
+		read -p "Do you wish to re-generate channel config? [yes/no] " yn
+		case $yn in
+			[YyEeSs]* ) ;;
+			* ) return 0
+    	esac
         rm -rf $channel_dir
-    fi
-    mkdir -p $channel_dir
+        mkdir -p $channel_dir
+    fi 
 
-    echoc "Generating channel config" light cyan
-	echoc "Channel: $channel_name" light green
-	echoc "Base path: $base_path" light green
-	echoc "Config path: $config_path" light green
-	echoc "Cryptos path: $cryptos_path" light green
-	echoc "Channel dir: $channel_dir" light green
-	echoc "Network profile: $network_profile" light green
-	echoc "Channel profile: $channel_profile" light green
-	echoc "Org MSP: $org_msp" light green
+    echoc "=========================" dark cyan
+    echoc "Generating channel config" dark cyan
+    echoc "=========================" dark cyan
+    echo
+	echoc "Channel: $channel_name" light cyan
+	echoc "Base path: $base_path" light cyan
+	echoc "Config path: $config_path" light cyan
+	echoc "Cryptos path: $cryptos_path" light cyan
+	echoc "Channel dir: $channel_dir" light cyan
+	echoc "Network profile: $network_profile" light cyan
+	echoc "Channel profile: $channel_profile" light cyan
+	echoc "Org MSP: $org_msp" light cyan
 
 	# generate channel configuration transaction
 	docker run --rm -v ${config_path}/configtx.yaml:/configtx.yaml \
                     -v ${channel_dir}:/channels/${channel_name} \
                     -v ${cryptos_path}:/crypto-config \
                     -e FABRIC_CFG_PATH=/ \
-                    hyperledger/fabric-tools:$FABRIC_VERSION \
+                    hyperledger/fabric-tools:${FABRIC_VERSION} \
                     bash -c " \
                         configtxgen -profile $channel_profile -outputCreateChannelTx /channels/${channel_name}/${channel_name}_tx.pb -channelID $channel_name /configtx.yaml;
                         configtxgen -inspectChannelCreateTx /channels/${channel_name}/${channel_name}_tx.pb
                     "
 	if [ "$?" -ne 0 ]; then
-		echoc "Failed to generate channel configuration transaction..." light red
+		echoc "Failed to generate channel configuration transaction..." dark red
 		exit 1
 	fi
 
@@ -763,10 +782,10 @@ generate_channeltx() {
                     -v ${channel_dir}:/channels/${channel_name} \
                     -v ${cryptos_path}:/crypto-config \
                     -e FABRIC_CFG_PATH=/ \
-                    hyperledger/fabric-tools:$FABRIC_VERSION \
+                    hyperledger/fabric-tools:${FABRIC_VERSION} \
                     configtxgen -profile $channel_profile -outputAnchorPeersUpdate /channels/${channel_name}/${org_msp}_anchors_tx.pb -channelID $channel_name -asOrg $org_msp /configtx.yaml
 	if [ "$?" -ne 0 ]; then
-		echoc "Failed to generate anchor peer update for $org_msp..." light red
+		echoc "Failed to generate anchor peer update for $org_msp..." dark red
 		exit 1
 	fi
 }
@@ -776,11 +795,11 @@ generate_channeltx() {
 # $2: certificates output directory
 generate_cryptos() {
     if [ -z "$1" ]; then
-		echoc "Config path missing" light red
+		echoc "Config path missing" dark red
 		exit 1
 	fi
     if [ -z "$2" ]; then
-		echoc "Cryptos path missing" light red
+		echoc "Cryptos path missing" dark red
 		exit 1
 	fi
 
@@ -788,23 +807,49 @@ generate_cryptos() {
     local cryptos_path="$2"
 
     if [ -d "$cryptos_path" ]; then
-        rm -rf $cryptos_path
+        echoc "crypto-config already exists" light yellow
+		read -p "Do you wish to re-generate crypto-config? [yes/no] " yn
+		case $yn in
+			[YyEeSs]* ) 
+
+            rm -rf $cryptos_path
+            mkdir -p $cryptos_path
+
+            echoc "==================" dark cyan
+            echoc "Generating cryptos" dark cyan
+            echoc "==================" dark cyan
+            echo
+            echoc "Config path: $config_path" light cyan
+            echoc "Cryptos path: $cryptos_path" light cyan
+
+            # generate crypto material
+            docker run --rm -v ${config_path}/crypto-config.yaml:/crypto-config.yaml \
+                            -v ${cryptos_path}:/crypto-config \
+                            hyperledger/fabric-tools:${FABRIC_VERSION} \
+                            cryptogen generate --config=/crypto-config.yaml --output=/crypto-config
+            if [ "$?" -ne 0 ]; then
+                echoc "Failed to generate crypto material..." dark red
+                exit 1
+            fi
+            
+            ;;
+			* ) ;;
+    	esac
     fi
-    mkdir -p $cryptos_path
-
-    echoc "Generating cryptos" light cyan
-	echoc "Config path: $config_path" light green
-	echoc "Cryptos path: $cryptos_path" light green
-
-	# generate crypto material
-	docker run --rm -v ${config_path}/crypto-config.yaml:/crypto-config.yaml \
-                    -v ${cryptos_path}:/crypto-config \
-                    hyperledger/fabric-tools:$FABRIC_VERSION \
-                    cryptogen generate --config=/crypto-config.yaml --output=/crypto-config
-	if [ "$?" -ne 0 ]; then
-		echoc "Failed to generate crypto material..." light red
-		exit 1
-	fi
+    
+    # copy cryptos into a shared folder available for client applications (sdk)
+    if [ -d "${CRYPTOS_SHARED_PATH}" ]; then
+        echoc "Shared crypto-config directory ${CRYPTOS_SHARED_PATH} already exists" light yellow
+		read -p "Do you wish to copy the new crypto-config here? [yes/no] " yn
+		case $yn in
+			[YyEeSs]* ) 
+                rm -rf ${CRYPTOS_SHARED_PATH}
+            ;;
+			* ) return 0
+    	esac
+    fi
+    mkdir -p ${CRYPTOS_SHARED_PATH}
+    cp -r ${cryptos_path}/** ${CRYPTOS_SHARED_PATH}
 }
 
 help () {
@@ -812,10 +857,11 @@ help () {
 ==============================
 ==== Fabric on Kubernetes ====
 ==============================
-help                : this help
-start               : run a simple 2-orgs setup; no secrets; no data persistency; shared volumes
-start [-i|prod]     : run an interactive setup using secrets and separated volumes with data persistency
-clean [namespace]   : wipe the environment out by namespace (default: blockchain)
+help                                    : this help
+start                                   : run a simple 2-orgs setup; no secrets; no data persistency; shared volumes
+start [-i|prod]                         : run an interactive setup using secrets and separated volumes with data persistency
+clean [namespace]                       : wipe the environment out by namespace (default: blockchain)
+generate [cryptos|genesis|channeltx]    : generate any of the configuration file
 "
     echoc "$help" light cyan
 }
@@ -830,6 +876,16 @@ if [ "$func" == "start" ]; then
         interactive_setup
     else
         simple_setup
+    fi
+elif [ "$func" == "generate" ]; then
+    readonly param="$1"
+    shift
+    if [ "$param" == "cryptos" ]; then
+        generate_cryptos $@
+    elif [ "$param" == "genesis" ]; then
+        generate_genesis $@
+    elif [ "$param" == "channeltx" ]; then
+        generate_channeltx $@
     fi
 elif [ "$func" == "clean" ]; then
     clean $@

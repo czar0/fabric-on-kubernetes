@@ -28,7 +28,6 @@ spec:
       - name: dockersocket
         hostPath:
           path: /var/run/docker.sock
-
       containers:
       - name: org1peer1
         image: {{ .Values.blockchain.peerImage }}

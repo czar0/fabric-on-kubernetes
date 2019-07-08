@@ -60,6 +60,22 @@ echo "Creating chaincodeinstall pod"
 echo "Running: kubectl create -f ${KUBECONFIG_FOLDER}/chaincode_install.yaml"
 kubectl create -f ${KUBECONFIG_FOLDER}/chaincode_install.yaml
 
+POD=$(kubectl get pod chaincodeinstall | grep chaincodeinstall | awk '{print $1}')
+POD_STATUS=$(kubectl get pod chaincodeinstall | grep chaincodeinstall | awk '{print $3}')
+while [ "${POD_STATUS}" != "Running" ]; do
+    echo "Waiting for pod to start. Status = ${POD_STATUS}"
+    sleep 5
+    if [ "${POD_STATUS}" == "Error" ]; then
+        echo "There is an error in pod. Please run 'kubectl logs ${POD}' or 'kubectl describe pod ${POD}'."
+        exit 1
+    fi
+    POD_STATUS=$(kubectl get pod chaincodeinstall | grep chaincodeinstall | awk '{print $3}')
+done
+
+echo "Copying chaincode into shared folder"
+kubectl exec $POD -- bash -c "mkdir -p /opt/gopath/src"
+kubectl cp ../../chaincode ${POD}:/opt/gopath/src/chaincode
+
 while [ "$(kubectl get pod chaincodeinstall | grep chaincodeinstall | awk '{print $3}')" != "Completed" ]; do
     echo "Waiting for chaincodeinstall container to be Completed"
     sleep 1;

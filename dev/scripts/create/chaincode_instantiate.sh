@@ -30,7 +30,7 @@ if [ -z "${ORDERER_ADDRESS}" ]; then
 	echo "I will wait 5 seconds before continuing."
 	sleep 5
 fi
-PEER_ADDRESS=${ORDERER_ADDRESS:-blockchain-orderer:31010}
+ORDERER_ADDRESS=${ORDERER_ADDRESS:-blockchain-orderer:31010}
 
 # Default to "Org1MSP" if not defined
 if [ -z ${PEER_MSPID} ]; then

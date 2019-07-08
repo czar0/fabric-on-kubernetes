@@ -9,6 +9,7 @@ else
 fi
 
 # The env variables don't matter as we are deleting pods
+ORDERER_ADDRESS="DoesntMatter"
 PEER_ADDRESS="DoesntMatter"
 PEER_MSPID="DoesntMatter"
 MSP_CONFIGPATH="DoesntMatter"
@@ -18,7 +19,7 @@ CHANNEL_NAME="DoesntMatter"
 
 # Delete Instantiate Chaincode Pod
 echo "Preparing yaml for chaincode instantiate delete"
-sed -e "s/%CHANNEL_NAME%/${CHANNEL_NAME}/g" -e "s/%PEER_ADDRESS%/${PEER_ADDRESS}/g" -e "s/%PEER_MSPID%/${PEER_MSPID}/g" -e "s|%MSP_CONFIGPATH%|${MSP_CONFIGPATH}|g"  -e "s/%CHAINCODE_NAME%/${CHAINCODE_NAME}/g" -e "s/%CHAINCODE_VERSION%/${CHAINCODE_VERSION}/g" ${KUBECONFIG_FOLDER}/chaincode_instantiate.yaml.base > ${KUBECONFIG_FOLDER}/chaincode_instantiate.yaml
+sed -e "s/%ORDERER_ADDRESS%/${ORDERER_ADDRESS}/g" -e "s/%CHANNEL_NAME%/${CHANNEL_NAME}/g" -e "s/%PEER_ADDRESS%/${PEER_ADDRESS}/g" -e "s/%PEER_MSPID%/${PEER_MSPID}/g" -e "s|%MSP_CONFIGPATH%|${MSP_CONFIGPATH}|g"  -e "s/%CHAINCODE_NAME%/${CHAINCODE_NAME}/g" -e "s/%CHAINCODE_VERSION%/${CHAINCODE_VERSION}/g" ${KUBECONFIG_FOLDER}/chaincode_instantiate.yaml.base > ${KUBECONFIG_FOLDER}/chaincode_instantiate.yaml
 
 echo "Deleting Existing Instantiate Chaincode Pod"
 if [ "$(kubectl get pods chaincodeinstantiate | grep chaincodeinstantiate | wc -l | awk '{print $1}')" != "0" ]; then

@@ -34,11 +34,6 @@ echo "=> CREATE_ALL: Running Join Channel on Org2 Peer1"
 CHANNEL_NAME="mychannel" PEER_MSPID="Org2MSP" ORDERER_ADDRESS="blockchain-orderer:31010" PEER_ADDRESS="blockchain-org2peer1:30210" MSP_CONFIGPATH="/shared/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp" create/join_channel.sh
 
 echo ""
-echo "=> CREATE_ALL: Copying chaincode into shared folder"
-ORDERER_POD=$(kubectl get pods | grep "orderer" | awk '{print $1}')
-kubectl cp ../chaincode ${ORDERER_POD}:/shared/chaincode 1>/dev/null
-
-echo ""
 echo "=> CREATE_ALL: Running Install Chaincode on Org1 Peer1"
 CHAINCODE_NAME="mychaincode" CHAINCODE_VERSION="1.0" MSP_CONFIGPATH="/shared/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp" PEER_MSPID="Org1MSP" PEER_ADDRESS="blockchain-org1peer1:30110" create/chaincode_install.sh
 

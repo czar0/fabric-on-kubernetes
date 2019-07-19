@@ -46,9 +46,10 @@ persistence:
 ##################################
 peer:
   # Type of database ("goleveldb" or "CouchDB"):
-  databaseType: goleveldb
+  databaseType: CouchDB
   # If CouchDB is used, which chart holds it
-  couchdbInstance: cdb-peer1
+  couchdbInstance: cdb-org1peer1-hlf-couchdb:5984
+  couchdbUsername: "couchdb"
   ## MSP ID of the Peer
   mspID: Org1MSP
   gossip:

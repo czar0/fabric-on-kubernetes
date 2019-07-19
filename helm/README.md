@@ -122,10 +122,27 @@ Generate the new channel configuration
 ./run.sh generate channeltx $channel_name ${PWD}/hlf ${PWD}/hlf/config ${PWD}/hlf/cryptos OneOrgOrdererGenesis OneOrgChannel Org1MSP
 ```
 
-Retrieve the peer container name
+Add the channel configurations into a new secret
+
+```bash
+org_msp=<organisation id of the peer>
+# e.g.
+org_msp=Org1MSP
+kubectl create secret generic --namespace $namespace hlf--${channel_name}-channel --from-file=${PWD}/hlf/channels/$channel_name/${channel_name}_tx.pb --from-file=${PWD}/hlf/channels/$channel_name/${org_msp}_anchors_tx.pb
+```
+
+Upgrade peer container adding the new secret
 
 ```bash
 peer_name=<name assigned to the peer>
+# e.g.
+peer_name=org1peer1
+helm upgrade --namespace $namespace --tiller-namespace $namespace --reuse-values --set secrets.channel=hlf--${channel_name}-channel $peer_name ./hlf/charts/hlf-peer
+```
+
+Retrieve the peer container name
+
+```bash
 peer_pod=$(kubectl get pods --namespace $namespace -l "app=hlf-peer,release=${peer_name}" -o jsonpath="{.items[0].metadata.name}")
 ```
 
@@ -147,20 +164,29 @@ Join the channel with the peer
 kubectl exec --namespace $namespace $peer_pod -- bash -c "CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel join -b /${channel_name}.block"
 ```
 
-### Deploy a new chaincode
+### Update a channel configuration
+
+[Official tutorial](https://hyperledger-fabric.readthedocs.io/en/release-1.4/channel_update_tutorial.html)
+
+```bash
+kubectl exec --namespace $namespace $cli_pod -- bash -c "peer channel fetch config ${channel_name}.pb -c $channel_name -o $orderer_address
+```
+
+### Deploy chaincode
 
 Copy chaincode codebase into peer container
 
 ```bash
-kubectl cp --namespace $namespace $chaincode_path ${cli_pod}:/opt/gopath/src/chaincode/${chaincode_path} 1>/dev/null
+kubectl cp --namespace $namespace $chaincode_path ${cli_pod}:/opt/gopath/src/chaincode/${chaincode_name}
 ```
+
+#### Instantiate a new chaincode
 
 Install chaincode
 
 ```bash
 kubectl exec --namespace $namespace $cli_pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=${peer_address} peer chaincode install -n $chaincode_name -v $chaincode_version -p chaincode/${chaincode_name}"
 # e.g.
-kubectl exec --namespace blockchain hlf-cli-pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=peer0:30110 peer chaincode install -n cc -v 1.0 -p chaincode/cc"
 ```
 
 Instantiate chaincode
@@ -169,6 +195,25 @@ Instantiate chaincode
 kubectl exec --namespace $namespace $cli_pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=${peer_address} peer chaincode instantiate -o $orderer_address -n $chaincode_name -v $chaincode_version -C $channel_name -l <language of the chaincode> -c <args in json format> -P <endorsment policy>"
 # e.g.
 kubectl exec --namespace blockchain hlf-cli-pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=peer0:30110 peer chaincode instantiate -o orderer:31010 -n cc -v 1.0 -C mychannel -l golang -c '{\"Args\":[]}' -P \"OR('Org1MSP.member')\""
+```
+
+#### Upgrade a previous deployed chaincode
+
+Install chaincode
+
+```bash
+chaincode_version=<a not-existing version of chaincode>
+kubectl exec --namespace $namespace $cli_pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=${peer_address} peer chaincode install -n $chaincode_name -v $chaincode_version -p chaincode/${chaincode_name}"
+# e.g.
+kubectl exec --namespace blockchain hlf-cli-pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=peer0:30110 peer chaincode install -n cc -v 1.1 -p chaincode/cc"
+```
+
+Upgrade chaincode to new version
+
+```bash
+kubectl exec --namespace $namespace $cli_pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=${peer_address} peer chaincode upgrade -o $orderer_address -n $chaincode_name -v $chaincode_version -C $channel_name -l <language of the chaincode> -c <args in json format> -P <endorsment policy>"
+# e.g.
+kubectl exec --namespace blockchain hlf-cli-pod -- bash -c "CORE_PEER_LOCALMSPID=Org1MSP CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp CORE_PEER_ADDRESS=peer0:30110 peer chaincode upgrade -o orderer:31010 -n cc -v 1.1 -C mychannel -l golang -c '{\"Args\":[]}' -P \"OR('Org1MSP.member')\""
 ```
 
 ### Run an invoke
@@ -232,7 +277,7 @@ export COUCHDB_PASSWORD=$(kubectl get secret --namespace blockchain cdb-org1peer
 Update the chart without resetting the password (requires running step 2):
 
 ```bash
-helm upgrade --namespace $namespace --tiller-namespace $namespace --reuse-values --set couchdbUsername=$COUCHDB_USERNAME,couchdbPassword=$COUCHDB_PASSWORD cdb-org1peer1 ./hlf/hlf-couchdb
+helm upgrade --namespace $namespace --tiller-namespace $namespace --reuse-values --set couchdbUsername=$COUCHDB_USERNAME,couchdbPassword=$COUCHDB_PASSWORD cdb-org1peer1 ./hlf/charts/hlf-couchdb
 ```
 
 ### Peer

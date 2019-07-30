@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export FABRIC_VERSION=1.4.1
+export FABRIC_VERSION=1.4.2
 export THIRDPARTY_VERSION=0.4.15
 
 #

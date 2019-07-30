@@ -42,9 +42,9 @@ persistence:
   storageClass: ""
 
 blockchain:
-  toolsImage: hyperledger/fabric-tools:1.4.1
-  ordererImage: hyperledger/fabric-orderer:1.4.1
-  caImage: hyperledger/fabric-ca:1.4.1
-  peerImage: hyperledger/fabric-peer:1.4.1
+  toolsImage: hyperledger/fabric-tools:1.4.2
+  ordererImage: hyperledger/fabric-orderer:1.4.2
+  caImage: hyperledger/fabric-ca:1.4.2
+  peerImage: hyperledger/fabric-peer:1.4.2
   couchdbImage: hyperledger/fabric-couchdb:0.4.15
   pullPolicy: IfNotPresent

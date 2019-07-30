@@ -14,7 +14,7 @@ spec:
       path: /var/run/docker.sock
   containers:
   - name: cryptogen
-    image: hyperledger/fabric-tools:1.4.1
+    image: hyperledger/fabric-tools:1.4.2
     imagePullPolicy: Always
     command: 
       - sh
@@ -39,7 +39,7 @@ spec:
     - mountPath: /shared
       name: shared
   - name: configtxgen
-    image: hyperledger/fabric-tools:1.4.1
+    image: hyperledger/fabric-tools:1.4.2
     imagePullPolicy: Always
     command: 
       - sh
@@ -78,7 +78,7 @@ spec:
     - mountPath: /shared
       name: shared
   - name: bootstrap
-    image: hyperledger/fabric-tools:1.4.1
+    image: hyperledger/fabric-tools:1.4.2
     imagePullPolicy: Always
     command: 
       - sh
@@ -113,7 +113,7 @@ spec:
 
       containers:
       - name: orderer
-        image: hyperledger/fabric-orderer:1.4.1
+        image: hyperledger/fabric-orderer:1.4.2
         command: ["sh", "-c", "sleep 5 && while [ ! -f /shared/bootstrapped ]; do echo Waiting for bootstrap; sleep 1; done; orderer"]
         env:
         - name: FABRIC_LOGGING_SPEC
@@ -175,7 +175,7 @@ spec:
 
       containers:
       - name: ca
-        image: hyperledger/fabric-ca:1.4.1
+        image: hyperledger/fabric-ca:1.4.2
         command: ["sh", "-c", "sleep 1 && while [ ! -f /shared/bootstrapped ]; do echo Waiting for bootstrap; sleep 1; done; fabric-ca-server start -c ${CONFIGYAML}"]
         env:
         - name: CONFIGYAML
@@ -220,7 +220,7 @@ spec:
 
       containers:
       - name: org1peer1
-        image: hyperledger/fabric-peer:1.4.1
+        image: hyperledger/fabric-peer:1.4.2
         command: ["sh", "-c", "sleep 1 && while [ ! -f /shared/bootstrapped ]; do echo Waiting for bootstrap; sleep 1; done; peer node start"]
         env:
         - name: FABRIC_LOGGING_SPEC
@@ -300,7 +300,7 @@ spec:
 
       containers:
       - name: org2peer1
-        image: hyperledger/fabric-peer:1.4.1
+        image: hyperledger/fabric-peer:1.4.2
         command: ["sh", "-c", "sleep 1 && while [ ! -f /shared/bootstrapped ]; do echo Waiting for bootstrap; sleep 1; done;  peer node start"]
         env:
         - name: FABRIC_LOGGING_SPEC

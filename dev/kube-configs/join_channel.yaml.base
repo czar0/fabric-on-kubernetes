@@ -12,7 +12,7 @@ spec:
 
   containers:
   - name: joinchannel
-    image: hyperledger/fabric-peer:1.4.1
+    image: hyperledger/fabric-peer:1.4.2
     imagePullPolicy: Always
     command: ["sh", "-c", "peer channel fetch config -o ${ORDERER_ADDRESS} -c ${CHANNEL_NAME} && peer channel join -b ${CHANNEL_NAME}_config.block "]
     env:

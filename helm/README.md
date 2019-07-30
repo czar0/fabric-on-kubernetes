@@ -235,7 +235,7 @@ kubectl exec --namespace blockchain $cli_pod -- bash -c "CORE_PEER_LOCALMSPID=Or
 Copy and export the newer versions in environment variables:
 
 ```bash
-export FABRIC_VERSION="1.4.1"
+export FABRIC_VERSION="1.4.2"
 export THIRDPARTY_VERSION="0.4.15"
 ```
 

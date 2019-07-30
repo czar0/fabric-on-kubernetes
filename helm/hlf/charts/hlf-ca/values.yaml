@@ -4,7 +4,7 @@
 
 image:
   repository: hyperledger/fabric-ca
-  tag: 1.4.1
+  tag: 1.4.2
   pullPolicy: IfNotPresent
 
 service:
@@ -111,7 +111,7 @@ externalDatabase:
 
 ## Settings used in configMap "--config"
 config:
-  hlfToolsVersion: 1.4.1
+  hlfToolsVersion: 1.4.2
   ## Mount the TLS certificate & key to disk?
   mountTLS: false
   ## Enable debug logging in ca Server configuration file

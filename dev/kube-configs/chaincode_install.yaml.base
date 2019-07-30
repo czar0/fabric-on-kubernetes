@@ -11,7 +11,7 @@ spec:
       claimName: shared-pvc
   containers:
   - name: chaincodeinstall
-    image: hyperledger/fabric-tools:1.4.1
+    image: hyperledger/fabric-tools:1.4.2
     imagePullPolicy: Always
     command: ["sh", "-c", "while [ ! -d /opt/gopath/src/chaincode ]; do echo Waiting for chaincode to be installed; sleep 1; done; peer chaincode install -n ${CHAINCODE_NAME} -v ${CHAINCODE_VERSION} -p chaincode/${CHAINCODE_NAME}"]
     env:

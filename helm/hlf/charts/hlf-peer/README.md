@@ -74,7 +74,7 @@ The following table lists the configurable parameters of the Hyperledger Fabric 
 | Parameter                          | Description                                     | Default                                                    |
 | ---------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------- |
 | `image.repository`                 | `hlf-peer` image repository                          | `hyperledger/fabric-peer`                                  |
-| `image.tag`                        | `hlf-peer` image tag                                 | `1.4.1`                                             |
+| `image.tag`                        | `hlf-peer` image tag                                 | `1.4.2`                                             |
 | `image.pullPolicy`                 | Image pull policy                                    | `IfNotPresent`                                             |
 | `service.portRequest`              | TCP port for requests to Peer                        | `30110`                                                      |
 | `service.type`                     | K8S service type exposing ports, e.g. `ClusterIP`    | `ClusterIP`                                                |

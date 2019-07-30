@@ -4,7 +4,7 @@
 
 image:
   repository: hyperledger/fabric-orderer
-  tag: 1.4.1
+  tag: 1.4.2
   pullPolicy: IfNotPresent
 
 service:

@@ -12,7 +12,7 @@ spec:
 
   containers:
   - name: chaincodeinstantiate
-    image: hyperledger/fabric-tools:1.4.1
+    image: hyperledger/fabric-tools:1.4.2
     imagePullPolicy: Always
     command: ["sh", "-c", "peer chaincode instantiate -o ${ORDERER_ADDRESS} -n ${CHAINCODE_NAME} -v ${CHAINCODE_VERSION}  -C ${CHANNEL_NAME} -l golang -c '{\"Args\":[]}' -P \"OR('Org1MSP.member', 'Org2MSP.member')\" "]
     env:

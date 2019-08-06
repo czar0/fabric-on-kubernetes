@@ -113,7 +113,7 @@ spec:
             - -c
             - |
               # To avoid having separate secrets for CouchDB and HLF
-              export CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=$COUCHDB_USERNAME
+              export CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=$COUCHDB_USER
               export CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=$COUCHDB_PASSWORD
 
               while [ ! -d /var/hyperledger/admin_msp/admincerts ] || [ -z "$(ls -A /var/hyperledger/admin_msp/admincerts)" ];

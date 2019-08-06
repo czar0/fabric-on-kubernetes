@@ -246,7 +246,7 @@ simple_setup() {
 
     echoc "Copying chaincode codebase into peer container" light blue
     kubectl exec --namespace $namespace $cli_pod -- bash -c "mkdir -p /opt/gopath/src"
-    kubectl cp --namespace $namespace $chaincode_path ${cli_pod}:/opt/gopath/src/chaincode 1>/dev/null
+    kubectl cp --namespace $namespace $chaincode_path ${cli_pod}:/opt/gopath/src/chaincode
     
     echoc "Installing chaincode" light blue
     kubectl exec --namespace $namespace $cli_pod -- bash -c "peer chaincode install -n $chaincode_name -v 1.0 -p chaincode/${chaincode_name}"
@@ -268,11 +268,6 @@ interactive_setup() {
     export chaincode_path="${base_path}/../../chaincode"
     export chaincode_name="mychaincode"
 
-
-    if [ -d "$cryptos_path" ]; then
-        rm -rf $cryptos_path
-    fi
-
     echoc "=======================================================" light cyan
     echoc "===== Fabric on Kubernetes - Official Helm Charts =====" light cyan
     echoc "=======================================================" light cyan
@@ -280,6 +275,15 @@ interactive_setup() {
     echo
     echoc "Setting up the network" light blue
     echo
+
+    if [ -d "$cryptos_path" ]; then
+        echoc "crypto-config already exists" light yellow
+		read -p "Do you wish to remove crypto-config? [yes/no] " yn
+		case $yn in
+			[YyEeSs]* ) rm -rf $cryptos_path ;;
+			* ) ;;
+    	esac
+    fi
 
     read -p "Organisations [1]: " orgs
     orgs=${orgs:-1}
@@ -306,12 +310,13 @@ interactive_setup() {
     echoc $namespace light green
 
     # It is not always working. It depends on the permissions assigned to the user. Leave it manual for now.
-    # kubectl create namespace $namespace
+    # kubectl create namespace $namespace >/dev/null 2>&1 || { echo >&2 "Not enough permissions to create a namespace."; exit 1; }
 
-    helm init --tiller-namespace $namespace --upgrade
+    # Repository that works also in country with restricted connectivity (such as China)
+    # helm init --service-account tiller --tiller-namespace $namespace --tiller-image registry.cn-hangzhou.aliyuncs.com/google_containers/tiller:v2.14.2 --upgrade
 
-    echoc "Waiting for tiller container to be up and running..." light blue
-    sleep 10
+    # echoc "Waiting for tiller container to be up and running..." light blue
+    # sleep 10
 
     create_ca
 
@@ -391,9 +396,17 @@ interactive_setup() {
     echoc "Update channel with anchor peers" light blue
     kubectl exec --namespace $namespace $peer_pod -- bash -c "CORE_PEER_MSPCONFIGPATH=/var/hyperledger/admin_msp peer channel update -o ${orderer_name}-hlf-ord:${orderer_port} -c $channel_name -f /hl_config/channel/${org_msp}_anchors_tx.pb"
 
-    helm install ./hlf/charts/hlf-tools --namespace $namespace --tiller-namespace $namespace --name cli --set image.tag=${FABRIC_VERSION},peer.host=${peer_name}-hlf-peer,peer.port=${peer_port},peer.mspID=${org_msp},secrets.peer.cert=hlf--${peer_name}-idcert,secrets.peer.key=hlf--${peer_name}-idkey,secrets.peer.caCert=hlf--ca-cert,secrets.channel=hlf--${channel_name}-channel,secrets.adminCert=hlf--${org}-admincert,secrets.adminKey=hlf--${org}-adminkey
-
     cli_name=cli
+    
+    echoc "Checking if CLI already exists" light yellow
+    cli_pod=$(kubectl get pods --namespace $namespace -l "app=hlf-tools,release=${cli_name}" -o jsonpath="{.items[0].metadata.name}")
+
+    if [ -z $cli_pod ]; then
+        echoc "Create and set up CLI" light blue
+        helm install ./hlf/charts/hlf-tools --namespace $namespace --tiller-namespace $namespace --name $cli_name --set image.tag=${FABRIC_VERSION},peer.host=${peer_name}-hlf-peer,peer.port=${peer_port},peer.mspID=${org_msp},secrets.peer.cert=hlf--${peer_name}-idcert,secrets.peer.key=hlf--${peer_name}-idkey,secrets.peer.caCert=hlf--ca-cert,secrets.channel=hlf--${channel_name}-channel,secrets.adminCert=hlf--${org}-admincert,secrets.adminKey=hlf--${org}-adminkey
+    else
+        echoc "CLI exists. Continuing.." light green
+    fi
 
     cli_pod=$(kubectl get pods --namespace $namespace -l "app=hlf-tools,release=${cli_name}" -o jsonpath="{.items[0].metadata.name}")
     status=$(kubectl describe pod --namespace $namespace -l "app=hlf-tools,release=${cli_name}" | grep -m2 "Ready" | head -n1 |  awk '{print $2}')
@@ -494,7 +507,7 @@ create_admin() {
     kubectl exec --namespace $namespace $ca_pod -- fabric-ca-client enroll -u http://${admin_name}:${admin_secret}@$SERVICE_DNS:7054 -M $org_msp
 
     echoc "Copying credentials to local" light blue
-    kubectl cp --namespace $namespace $ca_pod:/var/hyperledger/fabric-ca/$org_msp ${cryptos_path}/${org_msp} 1>/dev/null
+    kubectl cp --namespace $namespace $ca_pod:/var/hyperledger/fabric-ca/$org_msp ${cryptos_path}/${org_msp}
 
     mkdir -p ${cryptos_path}/${org_msp}/admincerts
     cp ${cryptos_path}/${org_msp}/signcerts/* ${cryptos_path}/${org_msp}/admincerts
@@ -543,7 +556,7 @@ create_orderer() {
     kubectl exec --namespace $namespace $ca_pod -- fabric-ca-client enroll -d -u http://${orderer_name}:${orderer_secret}@$SERVICE_DNS:7054 -M $orderer_msp
 
     echoc "Copying credentials to local" light blue
-    kubectl cp --namespace $namespace $ca_pod:/var/hyperledger/fabric-ca/${orderer_msp} ${cryptos_path}/${orderer_msp} 1>/dev/null
+    kubectl cp --namespace $namespace $ca_pod:/var/hyperledger/fabric-ca/${orderer_msp} ${cryptos_path}/${orderer_msp}
 
     mkdir -p ${cryptos_path}/${orderer_msp}/admincerts
     cp ${cryptos_path}/${orderer_msp}/signcerts/* ${cryptos_path}/${orderer_msp}/admincerts
@@ -806,35 +819,34 @@ generate_cryptos() {
     local config_path="$1"
     local cryptos_path="$2"
 
+    echoc "==================" dark cyan
+    echoc "Generating cryptos" dark cyan
+    echoc "==================" dark cyan
+    echo
+    echoc "Config path: $config_path" light cyan
+    echoc "Cryptos path: $cryptos_path" light cyan
+
     if [ -d "$cryptos_path" ]; then
         echoc "crypto-config already exists" light yellow
-		read -p "Do you wish to re-generate crypto-config? [yes/no] " yn
+		read -p "Do you wish to remove crypto-config? [yes/no] " yn
 		case $yn in
-			[YyEeSs]* ) 
-
-            rm -rf $cryptos_path
-            mkdir -p $cryptos_path
-
-            echoc "==================" dark cyan
-            echoc "Generating cryptos" dark cyan
-            echoc "==================" dark cyan
-            echo
-            echoc "Config path: $config_path" light cyan
-            echoc "Cryptos path: $cryptos_path" light cyan
-
-            # generate crypto material
-            docker run --rm -v ${config_path}/crypto-config.yaml:/crypto-config.yaml \
-                            -v ${cryptos_path}:/crypto-config \
-                            hyperledger/fabric-tools:${FABRIC_VERSION} \
-                            cryptogen generate --config=/crypto-config.yaml --output=/crypto-config
-            if [ "$?" -ne 0 ]; then
-                echoc "Failed to generate crypto material..." dark red
-                exit 1
-            fi
-            
-            ;;
+			[YyEeSs]* ) rm -rf $cryptos_path ;;
 			* ) ;;
     	esac
+    fi
+
+    if [ ! -d "$cryptos_path" ]; then
+        mkdir -p $cryptos_path
+
+        # generate crypto material
+        docker run --rm -v ${config_path}/crypto-config.yaml:/crypto-config.yaml \
+                        -v ${cryptos_path}:/crypto-config \
+                        hyperledger/fabric-tools:${FABRIC_VERSION} \
+                        cryptogen generate --config=/crypto-config.yaml --output=/crypto-config
+        if [ "$?" -ne 0 ]; then
+            echoc "Failed to generate crypto material..." dark red
+            exit 1
+        fi
     fi
     
     # copy cryptos into a shared folder available for client applications (sdk)

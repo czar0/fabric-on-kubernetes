@@ -9,7 +9,7 @@ image:
 
 service:
   # Cluster IP or LoadBalancer
-  type: ClusterIP
+  type: LoadBalancer
   portRequest: 30110
 
 ingress:
@@ -50,7 +50,6 @@ peer:
   # If CouchDB is used, which chart holds it
   couchdbInstance: cdb-org1peer
   couchdbPort: 5984
-  couchdbUsername: "couchdb"
   ## MSP ID of the Peer
   mspID: Org1MSP
   gossip:

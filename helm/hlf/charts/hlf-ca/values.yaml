@@ -9,7 +9,7 @@ image:
 
 service:
   ## Cluster IP or LoadBalancer
-  type: ClusterIP
+  type: LoadBalancer
   port: 30054
 
 ingress:

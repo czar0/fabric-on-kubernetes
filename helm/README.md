@@ -270,14 +270,14 @@ helm upgrade  --namespace $namespace --tiller-namespace $namespace --reuse-value
 Copy and export CouchDB username and password
 
 ```bash
-export COUCHDB_USERNAME=$(kubectl get secret --namespace blockchain cdb-org1peer1-hlf-couchdb -o jsonpath="{.data.COUCHDB_USERNAME}" | base64 --decode; echo)
+export COUCHDB_USER=$(kubectl get secret --namespace blockchain cdb-org1peer1-hlf-couchdb -o jsonpath="{.data.COUCHDB_USER}" | base64 --decode; echo)
 export COUCHDB_PASSWORD=$(kubectl get secret --namespace blockchain cdb-org1peer1-hlf-couchdb -o jsonpath="{.data.COUCHDB_PASSWORD}" | base64 --decode; echo)
 ```
 
 Update the chart without resetting the password (requires running step 2):
 
 ```bash
-helm upgrade --namespace $namespace --tiller-namespace $namespace --reuse-values --set couchdbUsername=$COUCHDB_USERNAME,couchdbPassword=$COUCHDB_PASSWORD cdb-org1peer1 ./hlf/charts/hlf-couchdb
+helm upgrade --namespace $namespace --tiller-namespace $namespace --reuse-values --set couchdbUsername=$COUCHDB_USER,couchdbPassword=$COUCHDB_PASSWORD cdb-org1peer1 ./hlf/charts/hlf-couchdb
 ```
 
 ### Peer

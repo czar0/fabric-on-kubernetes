@@ -49,11 +49,6 @@ spec:
     targetPort: 30110
     port: 30110
     name: grpc
-  - protocol: TCP
-    nodePort: 30111
-    targetPort: 30111
-    port: 30111
-    name: events
 ---
 apiVersion: v1
 kind: Service
@@ -71,11 +66,6 @@ spec:
     targetPort: 30210
     port: 30210
     name: grpc
-  - protocol: TCP
-    nodePort: 30211
-    targetPort: 30211
-    port: 30211
-    name: events
 ---
 apiVersion: v1
 kind: Service

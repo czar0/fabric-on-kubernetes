@@ -12,9 +12,9 @@ spec:
 
   containers:
   - name: chaincodeinstantiate
-    image: hyperledger/fabric-tools:1.4
+    image: hyperledger/fabric-tools:1.4.2
     imagePullPolicy: Always
-    command: ["sh", "-c", "peer chaincode instantiate -n ${CHAINCODE_NAME} -v ${CHAINCODE_VERSION} -c '{\"Args\":[\"init\",\"a\",\"100\",\"b\",\"200\"]}' -C ${CHANNEL_NAME}"]
+    command: ["sh", "-c", "peer chaincode instantiate -o ${ORDERER_ADDRESS} -n ${CHAINCODE_NAME} -v ${CHAINCODE_VERSION}  -C ${CHANNEL_NAME} -l golang -c '{\"Args\":[]}' -P \"OR('Org1MSP.member', 'Org2MSP.member')\" "]
     env:
     - name: CHANNEL_NAME
       value: %CHANNEL_NAME%
@@ -30,6 +30,8 @@ spec:
       value: %PEER_MSPID%
     - name: CORE_PEER_ADDRESS
       value: %PEER_ADDRESS%
+    - name: ORDERER_ADDRESS
+      value: %ORDERER_ADDRESS%
     - name: GODEBUG
       value: "netdns=go"
     volumeMounts:

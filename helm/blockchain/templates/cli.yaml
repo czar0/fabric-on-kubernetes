@@ -1,0 +1,58 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "blockchain.name" . }}-cli
+  labels:
+    name: {{ template "blockchain.name" . }}-cli
+    app: {{ template "blockchain.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: {{ template "blockchain.name" . }}-cli
+      labels:
+        app: {{ template "blockchain.name" . }}
+        chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+        release: {{ .Release.Name }}
+        heritage: {{ .Release.Service }}
+        name: {{ template "blockchain.name" . }}-cli
+    spec:
+      volumes:
+      - name: {{ template "blockchain-shared-pvc.name" . }}
+        persistentVolumeClaim:
+         claimName: {{ template "blockchain-shared-pvc.name" . }}
+      - name: dockersocket
+        hostPath:
+          path: /var/run/docker.sock
+      containers:
+      - name: cli
+        image: {{ .Values.blockchain.toolsImage }}
+        imagePullPolicy: {{ .Values.blockchain.pullPolicy }}
+        tty: true
+        env:
+        - name: FABRIC_LOGGING_SPEC
+          value: DEBUG
+        # - name: CORE_PEER_NETWORKID
+        #   value: nid1
+        - name: CORE_PEER_ADDRESS
+          value: {{ template "blockchain.name" . }}-org1peer1:30110
+        - name: CORE_VM_ENDPOINT
+          value: unix:///host/var/run/docker.sock
+        - name: CORE_PEER_LOCALMSPID
+          value: Org1MSP
+        - name: FABRIC_CFG_PATH
+          value: /etc/hyperledger/fabric
+        - name: CORE_PEER_MSPCONFIGPATH
+          value: /shared/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+        - name: ORDERER_URL
+          value: {{ template "blockchain.name" . }}-orderer:31010
+        - name: GODEBUG
+          value: "netdns=go"
+        volumeMounts:
+        - mountPath: /shared
+          name: {{ template "blockchain-shared-pvc.name" . }}
+        - mountPath: /host/var/run/docker.sock
+          name: dockersocket

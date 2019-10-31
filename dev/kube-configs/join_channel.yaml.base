@@ -12,16 +12,16 @@ spec:
 
   containers:
   - name: joinchannel
-    image: hyperledger/fabric-peer:1.4
+    image: hyperledger/fabric-peer:1.4.2
     imagePullPolicy: Always
-    command: ["sh", "-c", "peer channel fetch config -o ${ORDERER_URL} -c ${CHANNEL_NAME} && peer channel join -b ${CHANNEL_NAME}_config.block "]
+    command: ["sh", "-c", "peer channel fetch config -o ${ORDERER_ADDRESS} -c ${CHANNEL_NAME} && peer channel join -b ${CHANNEL_NAME}_config.block "]
     env:
     - name: CHANNEL_NAME
       value: %CHANNEL_NAME%
     - name: CORE_PEER_NETWORKID
       value: nid1
-    - name: ORDERER_URL
-      value: blockchain-orderer:31010
+    - name: ORDERER_ADDRESS
+      value: %ORDERER_ADDRESS%
     - name: CORE_PEER_ADDRESS
       value: %PEER_ADDRESS%
     - name: CORE_PEER_LOCALMSPID

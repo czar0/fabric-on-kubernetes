@@ -24,6 +24,14 @@ if [ -z "${PEER_ADDRESS}" ]; then
 fi
 PEER_ADDRESS=${PEER_ADDRESS:-blockchain-org1peer1:30110}
 
+# Default to orderer's address if not defined
+if [ -z "${ORDERER_ADDRESS}" ]; then
+	echo "ORDERER_ADDRESS not defined. I will use \"blockchain-orderer:31010\"."
+	echo "I will wait 5 seconds before continuing."
+	sleep 5
+fi
+ORDERER_ADDRESS=${ORDERER_ADDRESS:-blockchain-orderer:31010}
+
 # Default to "Org1MSP" if not defined
 if [ -z ${PEER_MSPID} ]; then
 	echo "PEER_MSPID not defined. I will use \"Org1MSP\"."
@@ -62,7 +70,7 @@ echo "Running: ${KUBECONFIG_FOLDER}/../scripts/delete/delete_chaincode-instantia
 ${KUBECONFIG_FOLDER}/../scripts/delete/delete_chaincode-instantiate.sh
 
 echo "Preparing yaml for chaincodeinstantiate"
-sed -e "s/%CHANNEL_NAME%/${CHANNEL_NAME}/g" -e "s/%PEER_ADDRESS%/${PEER_ADDRESS}/g" -e "s/%PEER_MSPID%/${PEER_MSPID}/g" -e "s|%MSP_CONFIGPATH%|${MSP_CONFIGPATH}|g"  -e "s/%CHAINCODE_NAME%/${CHAINCODE_NAME}/g" -e "s/%CHAINCODE_VERSION%/${CHAINCODE_VERSION}/g" ${KUBECONFIG_FOLDER}/chaincode_instantiate.yaml.base > ${KUBECONFIG_FOLDER}/chaincode_instantiate.yaml
+sed -e "s/%CHANNEL_NAME%/${CHANNEL_NAME}/g" -e "s/%ORDERER_ADDRESS%/${ORDERER_ADDRESS}/g" -e "s/%PEER_ADDRESS%/${PEER_ADDRESS}/g" -e "s/%PEER_MSPID%/${PEER_MSPID}/g" -e "s|%MSP_CONFIGPATH%|${MSP_CONFIGPATH}|g"  -e "s/%CHAINCODE_NAME%/${CHAINCODE_NAME}/g" -e "s/%CHAINCODE_VERSION%/${CHAINCODE_VERSION}/g" ${KUBECONFIG_FOLDER}/chaincode_instantiate.yaml.base > ${KUBECONFIG_FOLDER}/chaincode_instantiate.yaml
 
 echo "Creating chaincodeinstantiate pod"
 echo "Running: kubectl create -f ${KUBECONFIG_FOLDER}/chaincode_instantiate.yaml"

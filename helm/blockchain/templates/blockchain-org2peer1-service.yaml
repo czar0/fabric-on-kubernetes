@@ -1,0 +1,47 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "blockchain.name" . }}-org2peer1
+  labels:
+    name: {{ template "blockchain.name" . }}-org2peer1
+    app: {{ template "blockchain.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    run: {{ template "blockchain.name" . }}-org2peer1
+spec:
+  type: NodePort
+  selector:
+    name: {{ template "blockchain.name" . }}-org2peer1
+    app: {{ template "blockchain.name" . }}
+    release: {{ .Release.Name }}
+  ports:
+  - protocol: TCP
+    nodePort: 30210
+    targetPort: 30210
+    port: 30210
+    name: grpc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "blockchain.name" . }}-couchdb2
+  labels:
+    app: {{ template "blockchain.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    run: {{ template "blockchain.name" . }}-couchdb2
+spec:
+  type: NodePort
+  selector:
+    name: {{ template "blockchain.name" . }}-couchdb2
+    app: {{ template "blockchain.name" . }}
+    release: {{ .Release.Name }}
+  ports:
+  - protocol: TCP
+    port: 31984
+    targetPort: 5984
+    nodePort: 31984
+    name: couchdb2
